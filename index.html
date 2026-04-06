@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HC Team Reporting</title>
+<link rel="apple-touch-icon" href="icons/icon-512.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HC Reporting">
+<meta name="theme-color" content="#5BB8F5">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Google Sans', Arial, sans-serif; background: #f5f5f5; color: #202124; font-size: 14px; }
+.top-nav { background: #1a73e8; color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200; }
+.top-nav-title { font-size: 18px; font-weight: 500; }
+.top-nav-sub   { font-size: 12px; opacity: .8; margin-top: 2px; }
+.section-bar { background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; padding: 0 24px; position: sticky; top: 56px; z-index: 100; }
+.section-btn { padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: #5f6368; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
+.section-btn:hover { color: #1a73e8; }
+.section-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+.section-panel { display: none; }
+.section-panel.active { display: block; }
+.page { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e0e0e0; }
+.tab { padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500; color: #5f6368; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab:hover { color: #1a73e8; }
+.tab.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; padding: 16px; }
+.card-label { font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.card-value { font-size: 26px; font-weight: 500; }
+.card-value.blue   { color: #1a73e8; }
+.card-value.green  { color: #1e8e3e; }
+.card-value.amber  { color: #f29900; }
+.card-value.purple { color: #7b1fa2; }
+.card-value.red    { color: #c5221f; }
+.card-sub { font-size: 11px; color: #5f6368; margin-top: 4px; }
+.filters { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filters label { font-size: 12px; color: #5f6368; margin-right: 4px; }
+.filters select, .filters input { border: 1px solid #dadce0; border-radius: 4px; padding: 6px 10px; font-size: 13px; color: #202124; background: #fff; outline: none; }
+.filters select:focus, .filters input:focus { border-color: #1a73e8; }
+.table-wrap { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: #f8f9fa; }
+th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 500; color: #5f6368; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; cursor: pointer; user-select: none; }
+th:hover { background: #f1f3f4; }
+td { padding: 10px 14px; border-bottom: 1px solid #f1f3f4; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr.data-row:hover { background: #f8f9fa; cursor: pointer; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.badge-yes      { background: #e6f4ea; color: #1e8e3e; }
+.badge-no       { background: #fce8e6; color: #c5221f; }
+.badge-flag     { background: #fef7e0; color: #f29900; }
+.badge-complete { background: #e6f4ea; color: #1e8e3e; }
+.badge-progress { background: #e8f0fe; color: #1a73e8; }
+.badge-notstart { background: #f1f3f4; color: #5f6368; }
+.prog-wrap { background: #e8eaed; border-radius: 4px; height: 7px; width: 90px; overflow: hidden; display: inline-block; vertical-align: middle; }
+.prog-fill { height: 100%; border-radius: 4px; }
+.detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; align-items: flex-start; justify-content: center; padding-top: 40px; }
+.detail-overlay.open { display: flex; }
+.detail-panel { background: #fff; border-radius: 12px; width: 92%; max-width: 640px; padding: 28px; position: relative; max-height: 85vh; overflow-y: auto; }
+.detail-close { position: absolute; top: 14px; right: 16px; background: none; border: none; cursor: pointer; font-size: 20px; color: #5f6368; }
+.detail-title { font-size: 19px; font-weight: 500; margin-bottom: 4px; }
+.detail-sub   { font-size: 13px; color: #5f6368; margin-bottom: 20px; }
+.section-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; color: #5f6368; margin-bottom: 10px; border-bottom: 1px solid #f1f3f4; padding-bottom: 6px; margin-top: 20px; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-item label { font-size: 11px; color: #5f6368; display: block; margin-bottom: 3px; }
+.stat-item span  { font-size: 14px; font-weight: 500; }
+.text-block { background: #f8f9fa; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #3c4043; line-height: 1.5; white-space: pre-wrap; }
+.text-block.empty { color: #9aa0a6; font-style: italic; }
+.step-list { display: flex; flex-direction: column; gap: 6px; }
+.step-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+.step-row.done { background: #e6f4ea; }
+.step-row.todo { background: #f8f9fa; color: #5f6368; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.step-dot.done { background: #1e8e3e; }
+.step-dot.todo { background: #dadce0; }
+.pipeline { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+.pipe-col { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+.pipe-header { padding: 10px 14px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+.pipe-header.notstart { background: #f1f3f4; color: #5f6368; }
+.pipe-header.inprog   { background: #e8f0fe; color: #1a73e8; }
+.pipe-header.done     { background: #e6f4ea; color: #1e8e3e; }
+.pipe-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; min-height: 60px; }
+.pipe-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 10px; cursor: pointer; font-size: 13px; }
+.pipe-card:hover { background: #e8f0fe; border-color: #c5d8f6; }
+.pipe-card .pc-name { font-weight: 500; margin-bottom: 3px; }
+.pipe-card .pc-team { font-size: 11px; color: #5f6368; }
+.loading { text-align: center; padding: 60px; color: #5f6368; }
+.error   { text-align: center; padding: 40px; color: #c5221f; background: #fce8e6; border-radius: 8px; margin: 16px 0; }
+.empty   { text-align: center; padding: 40px; color: #5f6368; }
+@media(max-width:640px) {
+  .hide-sm { display: none; }
+  .metrics { grid-template-columns: 1fr 1fr; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .pipeline { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<div class="top-nav">
+  <div>
+    <div class="top-nav-title">HC Ministry App</div>
+    <div class="top-nav-sub">Team Reporting &amp; Onboarding</div>
+  </div>
+  <div style="font-size:12px;opacity:.8" id="load-status">Loading...</div>
+</div>
+
+<!-- Install Modal Overlay -->
+<div id="install-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div id="install-modal" style="background:#fff;border-radius:16px;width:100%;max-width:360px;overflow:hidden;font-family:'Google Sans',Arial,sans-serif">
+    <div style="background:#5BB8F5;padding:24px;text-align:center;position:relative">
+      <button onclick="dismissInstall()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.8;line-height:1">&#x2715;</button>
+      <canvas id="modal-icon" width="72" height="72" style="border-radius:16px;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"></canvas>
+      <div style="color:#fff;font-size:18px;font-weight:600">HC Team Reporting</div>
+      <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:4px">Add to your home screen</div>
+    </div>
+    <div id="install-steps" style="padding:20px 24px 8px"></div>
+    <div style="padding:12px 24px 20px;display:flex;gap:10px;align-items:center">
+      <div id="step-dots" style="flex:1;display:flex;gap:6px"></div>
+      <button id="install-prev" onclick="installNav(-1)" style="display:none;background:none;border:1px solid #dadce0;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;color:#5f6368">Back</button>
+      <button id="install-next" onclick="installNav(1)" style="background:#5BB8F5;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-size:13px;font-weight:600;color:#fff">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Persistent install nudge bar -->
+<div id="install-bar" style="display:none;background:#1a1a1a;color:#fff;padding:10px 16px;align-items:center;justify-content:space-between;gap:12px;font-size:13px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <canvas id="bar-icon" width="28" height="28" style="border-radius:6px;flex-shrink:0"></canvas>
+    <span>Install <strong>HC Team Reporting</strong> for quick access</span>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="dismissInstall()" style="background:none;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px">Later</button>
+    <button onclick="openInstallModal()" style="background:#5BB8F5;border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600">Install</button>
+  </div>
+</div>
+
+<!-- Section switcher -->
+<div class="section-bar">
+  <div class="section-btn active" onclick="switchSection('reports')">Sunday Reports</div>
+  <div class="section-btn" onclick="switchSection('onboarding')">Onboarding</div>
+</div>
+
+<!-- SECTION 1: SUNDAY REPORTS -->
+<div class="section-panel active" id="section-reports">
+<div class="page">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('r','overview')">Overview</div>
+    <div class="tab" onclick="switchTab('r','attendance')">Attendance &amp; Team</div>
+    <div class="tab" onclick="switchTab('r','guests')">Guests &amp; Engagement</div>
+    <div class="tab" onclick="switchTab('r','flags')">Flags &amp; Follow-ups</div>
+  </div>
+  <div class="tab-panel active" id="r-tab-overview">
+    <div class="metrics">
+      <div class="card"><div class="card-label">Total Reports</div><div class="card-value blue" id="m-total">—</div></div>
+      <div class="card"><div class="card-label">Total Served</div><div class="card-value green" id="m-served">—</div></div>
+      <div class="card"><div class="card-label">First-Time Guests</div><div class="card-value purple" id="m-guests">—</div></div>
+      <div class="card"><div class="card-label">Connect Cards In</div><div class="card-value blue" id="m-cards">—</div></div>
+      <div class="card"><div class="card-label">Sign-Ups</div><div class="card-value green" id="m-signups">—</div></div>
+      <div class="card"><div class="card-label">Checklist Completion</div><div class="card-value amber" id="m-checklist">—</div><div class="card-sub" id="m-checklist-sub"></div></div>
+    </div>
+    <div class="filters">
+      <div><label>Search</label><input type="text" id="r-search" placeholder="Name or team..." style="width:160px" oninput="applyReportFilters()"></div>
+      <div><label>Team</label><select id="r-filter-team" onchange="applyReportFilters()"><option value="">All teams</option></select></div>
+      <div><label>Date</label><select id="r-filter-date" onchange="applyReportFilters()"><option value="">All dates</option></select></div>
+    </div>
+    <div class="table-wrap">
+      <div class="loading" id="r-loading">Loading report data...</div>
+      <table id="r-main-table" style="display:none">
+        <thead><tr>
+          <th onclick="rSortBy('date')">Date</th>
+          <th onclick="rSortBy('team')">Team</th>
+          <th onclick="rSortBy('name')" class="hide-sm">Submitted By</th>
+          <th onclick="rSortBy('served')">Served</th>
+          <th onclick="rSortBy('firstTimeGuests')" class="hide-sm">Guests</th>
+          <th onclick="rSortBy('connectCards')" class="hide-sm">Cards</th>
+          <th onclick="rSortBy('checklistDone')">Checklist</th>
+          <th class="hide-sm">Flags</th>
+        </tr></thead>
+        <tbody id="r-table-body"></tbody>
+      </table>
+      <div class="empty" id="r-empty" style="display:none">No reports match your filters.</div>
+    </div>
+  </div>
+  <div class="tab-panel" id="r-tab-attendance">
+    <div class="metrics">
+      <div class="card"><div class="card-label">Avg Scheduled</div><div class="card-value blue" id="a-scheduled">—</div></div>
+      <div class="card"><div class="card-label">Avg Served</div><div class="card-value green" id="a-served">—</div></div>
+      <div class="card"><div class="card-label">Avg Sat In Service</div><div class="card-value blue" id="a-sat">—</div></div>
+      <div class="card"><div class="card-label">Avg Attended Rally</div><div class="card-value amber" id="a-rally">—</div></div>
+      <div class="card"><div class="card-label">Avg Wed. Prayer</div><div class="card-value purple" id="a-prayer">—</div></div>
+      <div class="card"><div class="card-label">Total Active Leaders</div><div class="card-value green" id="a-active">—</div></div>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>Date</th><th>Team</th><th>Scheduled</th><th>Served</th>
+        <th>Sat in Service</th><th class="hide-sm">Rally</th>
+        <th class="hide-sm">Min Leaders</th><th class="hide-sm">Wed Prayer</th>
+      </tr></thead><tbody id="a-body"></tbody></table>
+    </div>
+  </div>
+  <div class="tab-panel" id="r-tab-guests">
+    <div class="metrics">
+      <div class="card"><div class="card-label">Total First-Time Guests</div><div class="card-value purple" id="g-guests">—</div></div>
+      <div class="card"><div class="card-label">Connect Cards In</div><div class="card-value blue" id="g-cards-in">—</div></div>
+      <div class="card"><div class="card-label">Entered in Planning Center</div><div class="card-value green" id="g-cards-pc">—</div></div>
+      <div class="card"><div class="card-label">Total Sign-Ups</div><div class="card-value amber" id="g-signups">—</div></div>
+      <div class="card"><div class="card-label">Live Stream Viewers</div><div class="card-value blue" id="g-stream">—</div></div>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>Date</th><th>Team</th><th>First-Time Guests</th>
+        <th>Cards In</th><th>In Planning Center</th>
+        <th class="hide-sm">Sign-Ups</th><th class="hide-sm">Live Stream</th>
+      </tr></thead><tbody id="g-body"></tbody></table>
+    </div>
+  </div>
+  <div class="tab-panel" id="r-tab-flags">
+    <div class="metrics">
+      <div class="card"><div class="card-label">Reports with Follow-Ups</div><div class="card-value amber" id="f-followup">—</div></div>
+      <div class="card"><div class="card-label">Incidents Reported</div><div class="card-value red" id="f-incidents">—</div></div>
+      <div class="card"><div class="card-label">Tech Issues</div><div class="card-value blue" id="f-tech">—</div></div>
+      <div class="card"><div class="card-label">Building Repairs Needed</div><div class="card-value amber" id="f-building">—</div></div>
+    </div>
+    <div id="flags-list"></div>
+  </div>
+</div>
+</div>
+
+<!-- SECTION 2: ONBOARDING -->
+<div class="section-panel" id="section-onboarding">
+<div class="page">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('o','pipeline')">Pipeline</div>
+    <div class="tab" onclick="switchTab('o','tracker')">Onboarding Tracker</div>
+    <div class="tab" onclick="switchTab('o','grads')">HC Connect Grads</div>
+  </div>
+  <div class="tab-panel active" id="o-tab-pipeline">
+    <div class="metrics">
+      <div class="card"><div class="card-label">Total Grads</div><div class="card-value blue" id="o-grads">—</div></div>
+      <div class="card"><div class="card-label">In Onboarding</div><div class="card-value amber" id="o-inprog">—</div></div>
+      <div class="card"><div class="card-label">Onboarding Complete</div><div class="card-value green" id="o-complete">—</div></div>
+      <div class="card"><div class="card-label">Not Yet Started</div><div class="card-value red" id="o-notstart">—</div></div>
+      <div class="card"><div class="card-label">Avg Progress</div><div class="card-value blue" id="o-avgprog">—</div></div>
+    </div>
+    <div class="pipeline" id="pipeline-board"></div>
+  </div>
+  <div class="tab-panel" id="o-tab-tracker">
+    <div class="filters">
+      <div><label>Search</label><input type="text" id="o-search" placeholder="Name or team..." style="width:160px" oninput="applyOnboardFilters()"></div>
+      <div><label>Team</label><select id="o-filter-team" onchange="applyOnboardFilters()"><option value="">All teams</option></select></div>
+      <div><label>Status</label>
+        <select id="o-filter-status" onchange="applyOnboardFilters()">
+          <option value="">All</option>
+          <option value="complete">Complete</option>
+          <option value="inprog">In Progress</option>
+          <option value="notstart">Not Started</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="loading" id="o-loading">Loading onboarding data...</div>
+      <table id="o-main-table" style="display:none">
+        <thead><tr>
+          <th onclick="oSortBy('name')">Servant Leader</th>
+          <th onclick="oSortBy('team')">Team</th>
+          <th class="hide-sm">Position(s)</th>
+          <th onclick="oSortBy('progress')">Progress</th>
+          <th class="hide-sm">1st Service</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="o-table-body"></tbody>
+      </table>
+      <div class="empty" id="o-empty" style="display:none">No records match your filters.</div>
+    </div>
+  </div>
+  <div class="tab-panel" id="o-tab-grads">
+    <div class="metrics">
+      <div class="card"><div class="card-label">Total Grads</div><div class="card-value blue" id="grad-total">—</div></div>
+      <div class="card"><div class="card-label">Added to PC Services</div><div class="card-value green" id="grad-pc">—</div></div>
+      <div class="card"><div class="card-label">Added to Basecamp</div><div class="card-value green" id="grad-bc">—</div></div>
+      <div class="card"><div class="card-label">Youth</div><div class="card-value purple" id="grad-youth">—</div></div>
+    </div>
+    <div class="filters">
+      <div><label>Search</label><input type="text" id="g-search" placeholder="Name or email..." style="width:160px" oninput="applyGradFilters()"></div>
+      <div><label>Team</label><select id="g-filter-team" onchange="applyGradFilters()"><option value="">All teams</option></select></div>
+    </div>
+    <div class="table-wrap">
+      <div class="loading" id="g-loading">Loading grads data...</div>
+      <table id="g-main-table" style="display:none">
+        <thead><tr>
+          <th onclick="gSortBy('fullName')">Name</th>
+          <th class="hide-sm" onclick="gSortBy('email')">Email</th>
+          <th class="hide-sm">Phone</th>
+          <th onclick="gSortBy('teams')">Team(s)</th>
+          <th>PC Services</th>
+          <th class="hide-sm">Basecamp</th>
+        </tr></thead>
+        <tbody id="g-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Detail Overlay -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-panel">
+    <button class="detail-close" onclick="closeOverlay()">&#x2715;</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURATION — fill in your API key here ──────────────────────────
+var API_KEY = 'AIzaSyDnkoRHItScDLH1jU8Zr4IXugHHWD0u0sg';
+
+// Sheet IDs and tab names (already pulled from your Code.gs)
+var SHEET_ID_REPORTS    = '1MqsXbWaA0KHxWmVgF82-sK5S8qmlYuMYzltzXD5gZhc';
+var SHEET_ID_GRADS      = '1snqn4iBqhwiZ8xShTwCM0mI33vygADm4melcEmjEmuA';
+var SHEET_ID_ONBOARDING = '1yF8d_WGxj4f4E12D5Wu32vTN0aCUHziLRHqdv7Ce62I';
+var TAB_REPORTS         = 'HC Team Form Output (NJ)';
+var TAB_GRADS           = 'HC Connect Data';
+var TAB_ONBOARDING      = 'Onboarding Tracking Data';
+// ──────────────────────────────────────────────────────────────────────
+
+// ── Icon Drawing ──
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function drawHCIcon(canvas) {
+  var sz=canvas.width, vb=220, s=sz/vb, ctx=canvas.getContext('2d');
+  ctx.fillStyle='#5BB8F5'; roundRect(ctx,0,0,sz,sz,44*s); ctx.fill();
+  ctx.fillStyle='#1a1a1a'; roundRect(ctx,60*s,50*s,16*s,134*s,4*s); ctx.fill();
+  roundRect(ctx,20*s,92*s,96*s,16*s,4*s); ctx.fill();
+  ctx.strokeStyle='white'; ctx.lineWidth=7*s; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  var pts=[[68,100],[84,78],[102,87],[122,64],[144,42]];
+  ctx.moveTo(pts[0][0]*s,pts[0][1]*s);
+  for(var i=1;i<pts.length;i++) ctx.lineTo(pts[i][0]*s,pts[i][1]*s);
+  ctx.stroke();
+  ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(144*s,42*s,7*s,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='white'; ctx.font='700 '+Math.round(48*s)+'px Arial,sans-serif';
+  ctx.textAlign='right'; ctx.fillText('HC',192*s,186*s);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var barCanvas   = document.getElementById('bar-icon');
+  var modalCanvas = document.getElementById('modal-icon');
+  if (barCanvas)   drawHCIcon(barCanvas);
+  if (modalCanvas) drawHCIcon(modalCanvas);
+});
+
+// ── PWA Install Logic ──
+var deferredPrompt = null;
+var installStep = 0;
+var installSteps = [];
+var ua = navigator.userAgent;
+var isIOS = /iphone|ipad|ipod/i.test(ua);
+var isAndroid = /android/i.test(ua);
+var isInStandalone = window.navigator.standalone === true ||
+                     window.matchMedia('(display-mode: standalone)').matches;
+
+var iosSteps = [
+  { title:'Open in Safari', icon:'🧭', body:'Make sure you\'re using <strong>Safari</strong> — the install option only works in Safari on iPhone.', note:'Already in Safari? Great — move to the next step.' },
+  { title:'Tap the Share button', icon:'⬆️', body:'At the bottom of your screen, tap the <strong>Share button</strong> — it looks like a box with an arrow pointing upward.', note:'If you don\'t see it, scroll up slightly to reveal the Safari toolbar.' },
+  { title:'Tap "Add to Home Screen"', icon:'➕', body:'Scroll down in the Share menu and tap <strong>"Add to Home Screen"</strong>.', note:'You\'ll see a preview of the HC icon before confirming.' },
+  { title:'Confirm and you\'re done!', icon:'✅', body:'Tap <strong>"Add"</strong> in the top right corner. The icon will appear on your home screen instantly.', note:'Open it from your home screen for the full app experience.' }
+];
+var androidSteps = [
+  { title:'Open in Chrome', icon:'🌐', body:'Make sure you\'re using <strong>Google Chrome</strong>.', note:'Already in Chrome? You\'re good to go.' },
+  { title:'Tap the menu button', icon:'⋮', body:'Tap the <strong>three-dot menu</strong> in the top right corner of Chrome.', note:'Look for ⋮ in the upper right.' },
+  { title:'Tap "Add to Home screen"', icon:'➕', body:'Tap <strong>"Add to Home screen"</strong>. A dialog will appear.', note:'Some Chrome versions may show "Install app" instead.' },
+  { title:'Confirm installation', icon:'✅', body:'Tap <strong>"Add"</strong> or <strong>"Install"</strong> to confirm.', note:'Open it from your home screen for the full app experience.' }
+];
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  androidSteps = [{ title:'Install with one tap', icon:'📲', body:'Tap <strong>Install Now</strong> below.', note:'Your browser handles everything.', action:true }];
+  showInstallBar();
+});
+function showInstallBar() {
+  if (isInStandalone) return;
+  document.getElementById('install-bar').style.display = 'flex';
+}
+function openInstallModal() {
+  installStep  = 0;
+  installSteps = isIOS ? iosSteps : androidSteps;
+  renderInstallStep();
+  document.getElementById('install-overlay').style.display = 'flex';
+}
+function renderInstallStep() {
+  var s=installSteps[installStep], total=installSteps.length, isLast=installStep===total-1;
+  document.getElementById('install-steps').innerHTML =
+    '<div style="text-align:center;margin-bottom:16px">'+
+    '<div style="font-size:40px;margin-bottom:8px">'+s.icon+'</div>'+
+    '<div style="font-size:16px;font-weight:600;color:#202124;margin-bottom:8px">'+s.title+'</div>'+
+    '<div style="font-size:14px;color:#3c4043;line-height:1.6;margin-bottom:10px">'+s.body+'</div>'+
+    '<div style="font-size:12px;color:#5f6368;background:#f8f9fa;border-radius:8px;padding:8px 12px;line-height:1.5">'+s.note+'</div>'+
+    (s.action&&deferredPrompt?'<button onclick="oneTabInstall()" style="margin-top:16px;width:100%;background:#5BB8F5;border:none;color:#fff;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer">Install Now</button>':'')+
+    '</div>';
+  var dots='';
+  for(var i=0;i<total;i++) dots+='<div style="width:8px;height:8px;border-radius:50%;background:'+(i===installStep?'#5BB8F5':'#e0e0e0')+'"></div>';
+  document.getElementById('step-dots').innerHTML=dots;
+  document.getElementById('install-prev').style.display=installStep>0?'block':'none';
+  var btn=document.getElementById('install-next');
+  btn.textContent=isLast?'Done':'Next';
+  btn.style.background=isLast?'#1e8e3e':'#5BB8F5';
+}
+function installNav(dir) {
+  var total=installSteps.length;
+  if(dir===1&&installStep===total-1){dismissInstall();return;}
+  installStep=Math.max(0,Math.min(total-1,installStep+dir));
+  renderInstallStep();
+}
+function oneTabInstall() {
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(r){deferredPrompt=null;if(r.outcome==='accepted')dismissInstall();});
+}
+function dismissInstall() {
+  document.getElementById('install-overlay').style.display='none';
+  document.getElementById('install-bar').style.display='none';
+}
+window.addEventListener('load', function() {
+  if (!isInStandalone && (isIOS || isAndroid)) showInstallBar();
+});
+
+// ── Data loading helpers ──
+function toNum(val) { var n=parseFloat(val); return isNaN(n)?0:n; }
+function formatDate(val) {
+  if (!val) return '';
+  try { var d=new Date(val); if(isNaN(d.getTime()))return val.toString(); return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+  catch(e) { return val.toString(); }
+}
+function sheetURL(id, tab) {
+  return 'https://sheets.googleapis.com/v4/spreadsheets/'+id+'/values/'+encodeURIComponent(tab)+'?key='+API_KEY;
+}
+function rowsToObjects(values) {
+  if (!values || values.length < 2) return [];
+  var headers = values[0].map(function(h){ return h.toString().trim(); });
+  return values.slice(1).map(function(row){
+    var o={};
+    headers.forEach(function(h,i){ o[h]=row[i]!==undefined?row[i]:''; });
+    return o;
+  });
+}
+
+// ── Field mapping (mirrors your Code.gs) ──
+function mapReport(o, i) {
+  return {
+    id:i+1, timestamp:formatDate(o['Timestamp']), team:o['Team']||'', name:o['Your Name']||'',
+    date:formatDate(o["Today's Date"]),
+    scheduled:toNum(o['# of Team Members Scheduled']),
+    minLeaders:toNum(o['Minimum # of Servant Leaders Needed Per Service']),
+    served:toNum(o['# of Team Members Served']),
+    satInService:toNum(o['Of the People Who Served, How many sat in service?']),
+    attendedRally:toNum(o['# of Team Members who attended Pre-service Rally/ Huddle']),
+    totalActive:toNum(o['Total Number of Active Servant Leaders on Team']),
+    checklistDone:o['Was your Sunday Checklist Completed?']||'',
+    celebrations:o['Areas of Celebration']||'',
+    otherInfo:o['Any Other Relevant Information We Should Know']||'',
+    firstTimeGuests:toNum(o['# of First Time Guests']),
+    connectCards:toNum(o['# of Connect Cards Turned In']),
+    connectEntered:toNum(o['# of Connect Cards Entered Into Planning Center']),
+    signUps:toNum(o['# of Sign-Ups (next steps, baptisms, etc.)']),
+    followUp:o['Any Interactions that require additional level of follow up?']||'',
+    incidents:o['Incidents/ Areas of Concern (if Applicable)']||'',
+    actionSteps:o['Action Steps Being Taken to Address (If Applicable)']||'',
+    wednesdayPrayer:toNum(o['Of those who served this week, how many attended Wednesday night prayer?']),
+    followUp2:o['Any interactions that require an additional level of follow up?']||'',
+    liveStream:toNum(o['# of live stream viewers']),
+    techIssues:o['Issues Logged (Microphones, cameras, lighting, etc.)']||'',
+    buildingRepairs:o['Any Building Repairs Needed? (if yes, please explain)']||'',
+    maintenanceDone:o['Any maintenance/ repairs completed?']||'',
+  };
+}
+function mapGrad(o, i) {
+  var fullName=(o['First Name']||'')+' '+(o['Last Name']||'');
+  return {
+    id:i+1, firstName:o['First Name']||'', lastName:o['Last Name']||'', fullName:fullName.trim(),
+    phone:o['Mobile Phone #']||'', email:o['Home Email Address']||'',
+    notes:o['In-Office F/U Notes']||'', youth:o['Youth?@dropdown']||'',
+    teams:o['Team(s) Selections']||'', addedToPC:o['Added to PC-Services']||'',
+    addedToPCTeam:o['Added to PC-Service team(s) assignments']||'',
+    addedToBasecamp:o['Added to Basecamp HQ']||'',
+    addedToBasecampTeam:o['Added to SPECIFIC Basecamp TEAM']||'',
+  };
+}
+function mapOnboarding(o, i) {
+  var steps=[
+    o['Next Steps Completed'], o['Team(s) Selected'],
+    o['Added to Planning Center Services'], o['Added to Basecamp HQ'],
+    o['Team Introduction Call/Email/PC'], o['Planning Center - Add Positions w/in Team'],
+    o['Add to Basecamp Team & Welcome Intro'], o['Team Intro Email - Playbook & TL Intro'],
+    o['Playbook Acknowledgement'], o['Desired Serving Schedule'],
+    o['Shadowing Date Scheduled'], o['1st Service Date'],
+  ];
+  var completed=steps.filter(function(s){return s&&s.toString().trim()!=='';}).length;
+  return {
+    id:i+1, team:o['Team']||'', name:o['Servant Leader']||'',
+    email:o['Email']||'', phone:o['Phone']||'',
+    nextSteps:o['Next Steps Completed']||'', teamsSelected:o['Team(s) Selected']||'',
+    addedToPC:o['Added to Planning Center Services']||'',
+    addedToBasecamp:o['Added to Basecamp HQ']||'',
+    teamIntro:o['Team Introduction Call/Email/PC']||'',
+    positions:o['Team Position(s)']||'',
+    pcPositions:o['Planning Center - Add Positions w/in Team']||'',
+    basecampWelcome:o['Add to Basecamp Team & Welcome Intro']||'',
+    introEmail:o['Team Intro Email - Playbook & TL Intro']||'',
+    playbookAck:o['Playbook Acknowledgement']||'',
+    servingSchedule:o['Desired Serving Schedule']||'',
+    shadowDate:o['Shadowing Date Scheduled']||'',
+    firstService:o['1st Service Date']||'',
+    complete:o['Onboarding Complete']||'',
+    notes:o['Notes']||'',
+    progress:Math.round((completed/steps.length)*100),
+    completedSteps:completed, totalSteps:steps.length,
+  };
+}
+
+// ── State ──
+var reportData=[], gradsData=[], onboardData=[];
+var rSort={key:'date',asc:false}, oSort={key:'name',asc:true}, gSort={key:'fullName',asc:true};
+var loaded=0;
+
+// ── Boot: fetch all three sheets ──
+window.onload = function() {
+  fetch(sheetURL(SHEET_ID_REPORTS, TAB_REPORTS))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      reportData=rowsToObjects(data.values).map(mapReport);
+      dataLoaded('reports');
+    }).catch(onErr);
+
+  fetch(sheetURL(SHEET_ID_GRADS, TAB_GRADS))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      gradsData=rowsToObjects(data.values).map(mapGrad);
+      dataLoaded('grads');
+    }).catch(onErr);
+
+  fetch(sheetURL(SHEET_ID_ONBOARDING, TAB_ONBOARDING))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      onboardData=rowsToObjects(data.values).map(mapOnboarding);
+      dataLoaded('onboard');
+    }).catch(onErr);
+};
+
+function onErr(e) {
+  document.getElementById('load-status').textContent='Error loading data';
+  console.error(e);
+}
+
+function dataLoaded(which) {
+  loaded++;
+  if (which==='reports') {
+    document.getElementById('r-loading').style.display='none';
+    document.getElementById('r-main-table').style.display='';
+    populateReportFilters(); renderReports(reportData);
+  }
+  if (which==='grads') {
+    document.getElementById('g-loading').style.display='none';
+    document.getElementById('g-main-table').style.display='';
+    populateGradFilters(); renderGrads(gradsData);
+  }
+  if (which==='onboard') {
+    document.getElementById('o-loading').style.display='none';
+    document.getElementById('o-main-table').style.display='';
+    populateOnboardFilters(); renderOnboarding(onboardData); renderPipeline(onboardData);
+  }
+  if (loaded===3) {
+    document.getElementById('load-status').textContent=
+      reportData.length+' reports · '+gradsData.length+' grads · '+onboardData.length+' onboarding';
+  }
+}
+
+// ── Reports ──
+function populateReportFilters() {
+  fillSelect('r-filter-team',[...new Set(reportData.map(function(d){return d.team;}).filter(Boolean))].sort());
+  fillSelect('r-filter-date',[...new Set(reportData.map(function(d){return d.date;}).filter(Boolean))].sort().reverse());
+}
+function applyReportFilters() {
+  var q=document.getElementById('r-search').value.toLowerCase();
+  var team=document.getElementById('r-filter-team').value;
+  var date=document.getElementById('r-filter-date').value;
+  var f=reportData.filter(function(d){
+    return(!q||d.name.toLowerCase().includes(q)||d.team.toLowerCase().includes(q))&&
+           (!team||d.team===team)&&(!date||d.date===date);
+  });
+  renderReports(f);
+}
+function renderReports(data) {
+  renderReportMetrics(data); renderReportTable(data);
+  renderAttendance(data); renderGuests(data); renderFlags(data);
+}
+function renderReportMetrics(data) {
+  var checked=data.filter(function(d){return/yes/i.test(d.checklistDone);}).length;
+  set('m-total',data.length); set('m-served',sum(data,'served'));
+  set('m-guests',sum(data,'firstTimeGuests')); set('m-cards',sum(data,'connectCards'));
+  set('m-signups',sum(data,'signUps'));
+  set('m-checklist',data.length?Math.round(checked/data.length*100)+'%':'—');
+  set('m-checklist-sub',checked+' of '+data.length+' reports');
+}
+function renderReportTable(data) {
+  var sorted=sortArr(data,rSort.key,rSort.asc);
+  var tbody=document.getElementById('r-table-body');
+  var empty=document.getElementById('r-empty');
+  tbody.innerHTML=''; empty.style.display=sorted.length?'none':'block';
+  sorted.forEach(function(d){
+    var hasFlag=d.incidents||d.followUp||d.followUp2||d.buildingRepairs||d.techIssues;
+    var cl=/yes/i.test(d.checklistDone)?'badge-yes':/no/i.test(d.checklistDone)?'badge-no':'badge-flag';
+    var tr=document.createElement('tr'); tr.className='data-row';
+    tr.innerHTML='<td style="white-space:nowrap">'+(d.date||d.timestamp)+'</td>'+
+      '<td style="font-weight:500">'+d.team+'</td>'+
+      '<td class="hide-sm" style="color:#5f6368">'+d.name+'</td>'+
+      '<td>'+d.served+'</td><td class="hide-sm">'+d.firstTimeGuests+'</td>'+
+      '<td class="hide-sm">'+d.connectCards+'</td>'+
+      '<td><span class="badge '+cl+'">'+(d.checklistDone||'—')+'</span></td>'+
+      '<td class="hide-sm">'+(hasFlag?'<span class="badge badge-flag">Needs review</span>':'<span style="color:#9aa0a6">—</span>')+'</td>';
+    tr.onclick=function(){openReportDetail(d);}; tbody.appendChild(tr);
+  });
+}
+function rSortBy(key){rSort.asc=rSort.key===key?!rSort.asc:false;rSort.key=key;applyReportFilters();}
+function renderAttendance(data) {
+  set('a-scheduled',avg(data,'scheduled')); set('a-served',avg(data,'served'));
+  set('a-sat',avg(data,'satInService')); set('a-rally',avg(data,'attendedRally'));
+  set('a-prayer',avg(data,'wednesdayPrayer')); set('a-active',sum(data,'totalActive'));
+  var tbody=document.getElementById('a-body'); tbody.innerHTML='';
+  sortArr(data,'date',false).forEach(function(d){
+    var tr=document.createElement('tr'); tr.className='data-row';
+    tr.innerHTML='<td>'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'+
+      '<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'+
+      '<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td>'+
+      '<td class="hide-sm">'+d.wednesdayPrayer+'</td>';
+    tr.onclick=function(){openReportDetail(d);}; tbody.appendChild(tr);
+  });
+}
+function renderGuests(data) {
+  set('g-guests',sum(data,'firstTimeGuests')); set('g-cards-in',sum(data,'connectCards'));
+  set('g-cards-pc',sum(data,'connectEntered')); set('g-signups',sum(data,'signUps'));
+  set('g-stream',sum(data,'liveStream'));
+  var tbody=document.getElementById('g-body'); tbody.innerHTML='';
+  sortArr(data,'date',false).forEach(function(d){
+    var tr=document.createElement('tr'); tr.className='data-row';
+    tr.innerHTML='<td>'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'+
+      '<td>'+d.firstTimeGuests+'</td><td>'+d.connectCards+'</td><td>'+d.connectEntered+'</td>'+
+      '<td class="hide-sm">'+d.signUps+'</td><td class="hide-sm">'+d.liveStream+'</td>';
+    tr.onclick=function(){openReportDetail(d);}; tbody.appendChild(tr);
+  });
+}
+function renderFlags(data) {
+  set('f-followup',data.filter(function(d){return d.followUp||d.followUp2;}).length);
+  set('f-incidents',data.filter(function(d){return d.incidents;}).length);
+  set('f-tech',data.filter(function(d){return d.techIssues;}).length);
+  set('f-building',data.filter(function(d){return d.buildingRepairs;}).length);
+  var list=document.getElementById('flags-list');
+  var flagged=data.filter(function(d){return d.incidents||d.followUp||d.followUp2||d.buildingRepairs||d.techIssues||d.actionSteps;});
+  if(!flagged.length){list.innerHTML='<div class="empty">No flags or follow-ups.</div>';return;}
+  list.innerHTML=flagged.map(function(d){
+    var rows=[];
+    if(d.followUp)rows.push(['Follow-up needed',d.followUp]);
+    if(d.followUp2)rows.push(['Additional follow-up',d.followUp2]);
+    if(d.incidents)rows.push(['Incident / concern',d.incidents]);
+    if(d.actionSteps)rows.push(['Action steps',d.actionSteps]);
+    if(d.techIssues)rows.push(['Tech issues',d.techIssues]);
+    if(d.buildingRepairs)rows.push(['Building repairs',d.buildingRepairs]);
+    if(d.maintenanceDone)rows.push(['Maintenance completed',d.maintenanceDone]);
+    return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openReportDetail(reportData['+(d.id-1)+'])">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+        '<span style="font-weight:500">'+d.team+'</span>'+
+        '<span style="font-size:12px;color:#5f6368">'+(d.date||d.timestamp)+' · '+d.name+'</span>'+
+      '</div>'+
+      rows.map(function(r){return'<div style="padding:6px 0;border-top:1px solid #f1f3f4">'+
+        '<div style="font-size:11px;text-transform:uppercase;color:#5f6368;margin-bottom:2px">'+r[0]+'</div>'+
+        '<div style="font-size:13px">'+r[1]+'</div></div>';}).join('')+'</div>';
+  }).join('');
+}
+
+// ── Onboarding ──
+function populateOnboardFilters() {
+  fillSelect('o-filter-team',[...new Set(onboardData.map(function(d){return d.team;}).filter(Boolean))].sort());
+}
+function applyOnboardFilters() {
+  var q=document.getElementById('o-search').value.toLowerCase();
+  var team=document.getElementById('o-filter-team').value;
+  var status=document.getElementById('o-filter-status').value;
+  var f=onboardData.filter(function(d){
+    var st=getOnboardStatus(d);
+    return(!q||d.name.toLowerCase().includes(q)||d.team.toLowerCase().includes(q))&&
+           (!team||d.team===team)&&(!status||st===status);
+  });
+  renderOnboarding(f);
+}
+function getOnboardStatus(d){
+  if(/yes/i.test(d.complete))return'complete';
+  if(d.progress>0)return'inprog';
+  return'notstart';
+}
+function renderPipelineMetrics(data) {
+  var complete=data.filter(function(d){return getOnboardStatus(d)==='complete';}).length;
+  var inprog=data.filter(function(d){return getOnboardStatus(d)==='inprog';}).length;
+  var notstart=data.filter(function(d){return getOnboardStatus(d)==='notstart';}).length;
+  var avgP=data.length?Math.round(data.reduce(function(a,d){return a+d.progress;},0)/data.length):0;
+  set('o-grads',gradsData.length); set('o-inprog',inprog);
+  set('o-complete',complete); set('o-notstart',notstart); set('o-avgprog',avgP+'%');
+}
+function renderPipeline(data) {
+  renderPipelineMetrics(data);
+  var notstart=data.filter(function(d){return getOnboardStatus(d)==='notstart';});
+  var inprog=data.filter(function(d){return getOnboardStatus(d)==='inprog';});
+  var complete=data.filter(function(d){return getOnboardStatus(d)==='complete';});
+  function cards(arr){
+    if(!arr.length)return'<div style="padding:8px;font-size:12px;color:#9aa0a6">None</div>';
+    return arr.map(function(d){
+      return'<div class="pipe-card" onclick="openOnboardDetail(onboardData['+(d.id-1)+'])">'+
+        '<div class="pc-name">'+d.name+'</div>'+
+        '<div class="pc-team">'+d.team+(d.positions?' · '+d.positions:'')+'</div>'+
+        (d.progress>0?'<div style="margin-top:6px;display:flex;align-items:center;gap:6px">'+
+          '<div class="prog-wrap" style="width:70px"><div class="prog-fill" style="width:'+d.progress+'%;background:'+(d.progress===100?'#1e8e3e':'#1a73e8')+'"></div></div>'+
+          '<span style="font-size:11px;color:#5f6368">'+d.progress+'%</span></div>':'')+'</div>';
+    }).join('');
+  }
+  document.getElementById('pipeline-board').innerHTML=
+    '<div class="pipe-col"><div class="pipe-header notstart">Not Started ('+notstart.length+')</div><div class="pipe-body">'+cards(notstart)+'</div></div>'+
+    '<div class="pipe-col"><div class="pipe-header inprog">In Progress ('+inprog.length+')</div><div class="pipe-body">'+cards(inprog)+'</div></div>'+
+    '<div class="pipe-col"><div class="pipe-header done">Complete ('+complete.length+')</div><div class="pipe-body">'+cards(complete)+'</div></div>';
+}
+function renderOnboarding(data) {
+  var sorted=sortArr(data,oSort.key,oSort.asc);
+  var tbody=document.getElementById('o-table-body');
+  var empty=document.getElementById('o-empty');
+  tbody.innerHTML=''; empty.style.display=sorted.length?'none':'block';
+  sorted.forEach(function(d){
+    var st=getOnboardStatus(d);
+    var badgeClass=st==='complete'?'badge-complete':st==='inprog'?'badge-progress':'badge-notstart';
+    var badgeLabel=st==='complete'?'Complete':st==='inprog'?'In Progress':'Not Started';
+    var progColor=d.progress===100?'#1e8e3e':d.progress>0?'#1a73e8':'#e8eaed';
+    var tr=document.createElement('tr'); tr.className='data-row';
+    tr.innerHTML='<td style="font-weight:500">'+d.name+'</td><td>'+d.team+'</td>'+
+      '<td class="hide-sm" style="color:#5f6368;font-size:12px">'+d.positions+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:6px">'+
+        '<div class="prog-wrap"><div class="prog-fill" style="width:'+d.progress+'%;background:'+progColor+'"></div></div>'+
+        '<span style="font-size:11px;color:#5f6368">'+d.progress+'%</span></div></td>'+
+      '<td class="hide-sm" style="font-size:12px;color:#5f6368">'+(d.firstService||'—')+'</td>'+
+      '<td><span class="badge '+badgeClass+'">'+badgeLabel+'</span></td>';
+    tr.onclick=function(){openOnboardDetail(d);}; tbody.appendChild(tr);
+  });
+}
+function oSortBy(key){oSort.asc=oSort.key===key?!oSort.asc:true;oSort.key=key;applyOnboardFilters();}
+
+// ── Grads ──
+function populateGradFilters() {
+  var teams=[];
+  gradsData.forEach(function(d){
+    if(d.teams)d.teams.split(',').forEach(function(t){var tr=t.trim();if(tr&&!teams.includes(tr))teams.push(tr);});
+  });
+  fillSelect('g-filter-team',teams.sort());
+}
+function applyGradFilters() {
+  var q=document.getElementById('g-search').value.toLowerCase();
+  var team=document.getElementById('g-filter-team').value;
+  var f=gradsData.filter(function(d){
+    return(!q||d.fullName.toLowerCase().includes(q)||d.email.toLowerCase().includes(q))&&
+           (!team||d.teams.includes(team));
+  });
+  renderGrads(f);
+}
+function renderGrads(data) {
+  set('grad-total',data.length);
+  set('grad-pc',data.filter(function(d){return d.addedToPC&&d.addedToPC.toString().trim()!=='';}).length);
+  set('grad-bc',data.filter(function(d){return d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!=='';}).length);
+  set('grad-youth',data.filter(function(d){return/yes/i.test(d.youth);}).length);
+  var tbody=document.getElementById('g-table-body'); tbody.innerHTML='';
+  sortArr(data,gSort.key,gSort.asc).forEach(function(d){
+    var pcBadge=d.addedToPC&&d.addedToPC.toString().trim()!==''?'<span class="badge badge-yes">Yes</span>':'<span class="badge badge-no">No</span>';
+    var bcBadge=d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!==''?'<span class="badge badge-yes">Yes</span>':'<span class="badge badge-no">No</span>';
+    var linked=onboardData.find(function(o){
+      if(d.email&&o.email&&d.email.trim().toLowerCase()===o.email.trim().toLowerCase())return true;
+      return o.name&&d.fullName&&o.name.trim().toLowerCase()===d.fullName.trim().toLowerCase();
+    });
+    var tr=document.createElement('tr'); tr.className='data-row';
+    tr.innerHTML='<td><span style="font-weight:500">'+d.fullName+'</span>'+
+      (linked?'<span class="badge badge-progress" style="margin-left:8px;font-size:10px">'+
+        (getOnboardStatus(linked)==='complete'?'Onboarding complete':'Onboarding: '+linked.progress+'%')+'</span>':'')+
+      '</td><td class="hide-sm" style="font-size:12px;color:#5f6368">'+d.email+'</td>'+
+      '<td class="hide-sm" style="font-size:12px;color:#5f6368">'+d.phone+'</td>'+
+      '<td style="font-size:12px">'+d.teams+'</td><td>'+pcBadge+'</td><td class="hide-sm">'+bcBadge+'</td>';
+    tr.onclick=function(){openGradDetail(d,linked);}; tbody.appendChild(tr);
+  });
+}
+function gSortBy(key){gSort.asc=gSort.key===key?!gSort.asc:true;gSort.key=key;applyGradFilters();}
+
+// ── Detail Panels ──
+function openReportDetail(d) {
+  var hasFlag=d.incidents||d.followUp||d.followUp2||d.buildingRepairs||d.techIssues;
+  document.getElementById('detail-content').innerHTML=
+    '<div class="detail-title">'+d.team+'</div>'+
+    '<div class="detail-sub">'+(d.date||d.timestamp)+' &nbsp;·&nbsp; Submitted by '+d.name+'</div>'+
+    secTitle('Team Attendance')+
+    '<div class="stat-grid">'+
+      stat('Scheduled',d.scheduled)+stat('Served',d.served)+
+      stat('Sat in Service',d.satInService)+stat('Attended Rally',d.attendedRally)+
+      stat('Min Leaders Needed',d.minLeaders)+stat('Total Active Leaders',d.totalActive)+
+      stat('Wed. Prayer',d.wednesdayPrayer)+stat('Checklist Done',d.checklistDone||'—')+
+    '</div>'+
+    secTitle('Guest & Engagement')+
+    '<div class="stat-grid">'+
+      stat('First-Time Guests',d.firstTimeGuests)+stat('Connect Cards In',d.connectCards)+
+      stat('Entered in Planning Center',d.connectEntered)+stat('Sign-Ups',d.signUps)+
+      stat('Live Stream Viewers',d.liveStream)+
+    '</div>'+
+    textBlock('Areas of Celebration',d.celebrations)+
+    textBlock('Other Relevant Info',d.otherInfo)+
+    (hasFlag?secTitle('Flags & Follow-ups')+
+      (d.followUp?textBlock('Follow-up Needed',d.followUp):'')+
+      (d.followUp2?textBlock('Additional Follow-up',d.followUp2):'')+
+      (d.incidents?textBlock('Incidents / Concerns',d.incidents):'')+
+      (d.actionSteps?textBlock('Action Steps',d.actionSteps):'')+
+      (d.techIssues?textBlock('Tech Issues',d.techIssues):'')+
+      (d.buildingRepairs?textBlock('Building Repairs Needed',d.buildingRepairs):'')+
+      (d.maintenanceDone?textBlock('Maintenance Completed',d.maintenanceDone):''):'')+
+    '<div style="margin-top:12px;font-size:11px;color:#9aa0a6">Submitted: '+d.timestamp+'</div>';
+  openOverlay();
+}
+function openOnboardDetail(d) {
+  var steps=[
+    ['Next Steps Completed',d.nextSteps],['Team(s) Selected',d.teamsSelected],
+    ['Added to Planning Center',d.addedToPC],['Added to Basecamp HQ',d.addedToBasecamp],
+    ['Team Introduction',d.teamIntro],['PC Positions Added',d.pcPositions],
+    ['Basecamp Team & Welcome Intro',d.basecampWelcome],['Team Intro Email / Playbook',d.introEmail],
+    ['Playbook Acknowledgement',d.playbookAck],['Desired Serving Schedule',d.servingSchedule],
+    ['Shadowing Date Scheduled',d.shadowDate],['1st Service Date',d.firstService],
+  ];
+  document.getElementById('detail-content').innerHTML=
+    '<div class="detail-title">'+d.name+'</div>'+
+    '<div class="detail-sub">'+d.team+(d.positions?' &nbsp;·&nbsp; '+d.positions:'')+'</div>'+
+    '<div style="margin:12px 0;display:flex;align-items:center;gap:10px">'+
+      '<div class="prog-wrap" style="width:200px"><div class="prog-fill" style="width:'+d.progress+'%;background:'+(d.progress===100?'#1e8e3e':'#1a73e8')+'"></div></div>'+
+      '<span style="font-weight:500">'+d.progress+'% complete</span>'+
+      '<span style="font-size:12px;color:#5f6368">('+d.completedSteps+' of '+d.totalSteps+' steps)</span>'+
+    '</div>'+
+    secTitle('Onboarding Checklist')+
+    '<div class="step-list">'+
+      steps.map(function(s){
+        var done=s[1]&&s[1].toString().trim()!=='';
+        return'<div class="step-row '+(done?'done':'todo')+'">'+
+          '<div class="step-dot '+(done?'done':'todo')+'"></div>'+
+          '<div style="flex:1"><span style="font-weight:500">'+s[0]+'</span>'+
+          (done&&s[1]!==true&&s[1]!=='TRUE'?'<span style="font-size:12px;color:#5f6368;margin-left:8px">'+s[1]+'</span>':'')+
+          '</div></div>';
+      }).join('')+
+    '</div>'+
+    secTitle('Contact')+
+    '<div class="stat-grid">'+stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+'</div>'+
+    (d.notes?textBlock('Notes',d.notes):'')+
+    '<div style="margin-top:12px;font-size:11px;color:#9aa0a6">Onboarding Complete: '+(d.complete||'No')+'</div>';
+  openOverlay();
+}
+function openGradDetail(d, linked) {
+  document.getElementById('detail-content').innerHTML=
+    '<div class="detail-title">'+d.fullName+'</div>'+
+    '<div class="detail-sub">HC Connect Grad</div>'+
+    secTitle('Contact Info')+
+    '<div class="stat-grid">'+
+      stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+
+      stat('Team(s)',d.teams||'—')+stat('Youth',d.youth||'—')+
+    '</div>'+
+    secTitle('Setup Status')+
+    '<div class="stat-grid">'+
+      stat('Added to PC Services',d.addedToPC||'—')+
+      stat('PC Team Assignments',d.addedToPCTeam||'—')+
+      stat('Added to Basecamp HQ',d.addedToBasecamp||'—')+
+      stat('Basecamp Team Added',d.addedToBasecampTeam||'—')+
+    '</div>'+
+    (d.notes?textBlock('F/U Notes',d.notes):'')+
+    (linked?secTitle('Onboarding Progress')+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+        '<div class="prog-wrap" style="width:160px"><div class="prog-fill" style="width:'+linked.progress+'%;background:'+(linked.progress===100?'#1e8e3e':'#1a73e8')+'"></div></div>'+
+        '<span style="font-weight:500">'+linked.progress+'%</span>'+
+        '<span style="font-size:12px;color:#5f6368">'+linked.team+'</span>'+
+      '</div>'+
+      '<div style="font-size:12px;color:#5f6368">Click the Onboarding tab to view full checklist.</div>'
+    :'<div style="margin-top:16px;font-size:13px;color:#9aa0a6;font-style:italic">No linked onboarding record found.</div>');
+  openOverlay();
+}
+
+// ── Overlay ──
+function openOverlay()  { document.getElementById('detail-overlay').classList.add('open'); }
+function closeOverlay() { document.getElementById('detail-overlay').classList.remove('open'); }
+function closeDetail(e) { if(e.target===document.getElementById('detail-overlay'))closeOverlay(); }
+
+// ── Navigation ──
+function switchSection(name) {
+  document.querySelectorAll('.section-btn').forEach(function(b,i){
+    b.classList.toggle('active',['reports','onboarding'][i]===name);
+  });
+  document.querySelectorAll('.section-panel').forEach(function(p){
+    p.classList.toggle('active',p.id==='section-'+name);
+  });
+}
+function switchTab(prefix, name) {
+  var sectionId='section-'+(prefix==='r'?'reports':'onboarding');
+  document.querySelectorAll('#'+sectionId+' .tab').forEach(function(b,i){
+    var names=prefix==='r'?['overview','attendance','guests','flags']:['pipeline','tracker','grads'];
+    b.classList.toggle('active',names[i]===name);
+  });
+  document.querySelectorAll('#'+sectionId+' .tab-panel').forEach(function(p){
+    p.classList.toggle('active',p.id===prefix+'-tab-'+name);
+  });
+}
+
+// ── Helpers ──
+function set(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+function sum(data,key){return data.reduce(function(a,d){return a+(d[key]||0);},0);}
+function avg(data,key){var v=data.map(function(d){return d[key];}).filter(function(x){return x>0;});return v.length?Math.round(v.reduce(function(a,b){return a+b;},0)/v.length):0;}
+function sortArr(data,key,asc){return[...data].sort(function(a,b){var av=a[key]??'',bv=b[key]??'';return typeof av==='number'?(asc?av-bv:bv-av):(asc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av)));});}
+function fillSelect(id,opts){var el=document.getElementById(id);opts.forEach(function(o){var x=document.createElement('option');x.textContent=o;el.appendChild(x);});}
+function stat(label,val){return'<div class="stat-item"><label>'+label+'</label><span>'+val+'</span></div>';}
+function secTitle(t){return'<div class="section-title">'+t+'</div>';}
+function textBlock(label,val){var empty=!val||val.toString().trim()==='';return'<div style="margin-bottom:12px"><div class="section-title">'+label+'</div><div class="text-block'+(empty?' empty':'')+'>'+(empty?'Nothing reported':val)+'</div></div>';}
+</script>
+
+<!-- Register Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+</body>
+</html>
