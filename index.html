@@ -897,23 +897,23 @@ function renderTeamGrid(cur,b){
 }
 
 function renderGlanceFlags(cur){
-  var incidents=cur.filter(function(d){return d.incidents||d.followUp||d.followUp2||d.actionSteps;});
-  var tech=cur.filter(function(d){return d.techIssues||d.buildingRepairs||d.maintenanceDone;});
   function mkFlags(arr,types){
-    if(!arr.length)return'<div class="empty" style="padding:20px">No items this period.</div>';
-    return arr.map(function(d){
-      var rows=[];
-      types.forEach(function(t){if(d[t[0]])rows.push([t[1],d[t[0]]]);});
-      return rows.map(function(r){
-        return'<div class="flag-item" onclick="openReportDetail(reportData['+(d.id-1)+'])">'
-          +'<div class="flag-type">'+r[0]+'</div>'
-          +'<div class="flag-meta">'+d.team+' · '+(d.date||d.timestamp)+' · '+d.name+'</div>'
-          +'<div class="flag-txt">'+r[1]+'</div></div>';
-      }).join('');
+    var items=[];
+    arr.forEach(function(d){
+      types.forEach(function(t){
+        if(hasContent(d[t[0]]))items.push({label:t[1],text:d[t[0]],report:d});
+      });
+    });
+    if(!items.length)return'<div class="empty" style="padding:20px">No items this period.</div>';
+    return items.map(function(it){
+      return'<div class="flag-item" onclick="openReportDetail(reportData['+(it.report.id-1)+'])">'
+        +'<div class="flag-type">'+it.label+'</div>'
+        +'<div class="flag-meta">'+it.report.team+' · '+(it.report.date||it.report.timestamp)+' · '+it.report.name+'</div>'
+        +'<div class="flag-txt">'+it.text+'</div></div>';
     }).join('');
   }
-  document.getElementById('flags-incidents').innerHTML=mkFlags(incidents,[['followUp','Follow-up'],['followUp2','Add\'l Follow-up'],['incidents','Incident'],['actionSteps','Action Steps']]);
-  document.getElementById('flags-tech').innerHTML=mkFlags(tech,[['techIssues','Tech Issue'],['buildingRepairs','Building Repair'],['maintenanceDone','Maintenance Done']]);
+  document.getElementById('flags-incidents').innerHTML=mkFlags(cur,[['followUp','Follow-up'],['followUp2','Add\'l Follow-up'],['incidents','Incident'],['actionSteps','Action Steps']]);
+  document.getElementById('flags-tech').innerHTML=mkFlags(cur,[['techIssues','Tech Issue'],['buildingRepairs','Building Repair'],['maintenanceDone','Maintenance Done']]);
 }
 
 function showTeamDetail(teamName){
@@ -975,7 +975,7 @@ function renderRTable(data){
   tbody.innerHTML='';
   document.getElementById('r-empty').style.display=sorted.length?'none':'block';
   sorted.forEach(function(d){
-    var hasFlag=d.incidents||d.followUp||d.followUp2||d.buildingRepairs||d.techIssues;
+    var hasFlag=hasContent(d.incidents)||hasContent(d.followUp)||hasContent(d.followUp2)||hasContent(d.buildingRepairs)||hasContent(d.techIssues);
     var cl=/yes/i.test(d.checklistDone)?'by':/no/i.test(d.checklistDone)?'bn':'bf';
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="white-space:nowrap;font-size:12px">'+(d.date||d.timestamp)+'</td>'
@@ -1015,22 +1015,22 @@ function renderGuests(data){
   });
 }
 function renderRFlags(data){
-  setEl('f-fu',data.filter(function(d){return d.followUp||d.followUp2;}).length);
-  setEl('f-inc',data.filter(function(d){return d.incidents;}).length);
-  setEl('f-tch',data.filter(function(d){return d.techIssues;}).length);
-  setEl('f-bld',data.filter(function(d){return d.buildingRepairs;}).length);
+  setEl('f-fu',data.filter(function(d){return hasContent(d.followUp)||hasContent(d.followUp2);}).length);
+  setEl('f-inc',data.filter(function(d){return hasContent(d.incidents);}).length);
+  setEl('f-tch',data.filter(function(d){return hasContent(d.techIssues);}).length);
+  setEl('f-bld',data.filter(function(d){return hasContent(d.buildingRepairs);}).length);
   var fl=document.getElementById('flags-list');
-  var flagged=data.filter(function(d){return d.incidents||d.followUp||d.followUp2||d.buildingRepairs||d.techIssues||d.actionSteps;});
+  var flagged=data.filter(function(d){return hasContent(d.incidents)||hasContent(d.followUp)||hasContent(d.followUp2)||hasContent(d.buildingRepairs)||hasContent(d.techIssues)||hasContent(d.actionSteps);});
   if(!flagged.length){fl.innerHTML='<div class="empty">No flags this period.</div>';return;}
   fl.innerHTML=flagged.map(function(d){
     var rows=[];
-    if(d.followUp)rows.push(['Follow-up',d.followUp]);
-    if(d.followUp2)rows.push(['Add\'l Follow-up',d.followUp2]);
-    if(d.incidents)rows.push(['Incident',d.incidents]);
-    if(d.actionSteps)rows.push(['Action Steps',d.actionSteps]);
-    if(d.techIssues)rows.push(['Tech Issues',d.techIssues]);
-    if(d.buildingRepairs)rows.push(['Building Repairs',d.buildingRepairs]);
-    if(d.maintenanceDone)rows.push(['Maintenance Done',d.maintenanceDone]);
+    if(hasContent(d.followUp))rows.push(['Follow-up',d.followUp]);
+    if(hasContent(d.followUp2))rows.push(['Add\'l Follow-up',d.followUp2]);
+    if(hasContent(d.incidents))rows.push(['Incident',d.incidents]);
+    if(hasContent(d.actionSteps))rows.push(['Action Steps',d.actionSteps]);
+    if(hasContent(d.techIssues))rows.push(['Tech Issues',d.techIssues]);
+    if(hasContent(d.buildingRepairs))rows.push(['Building Repairs',d.buildingRepairs]);
+    if(hasContent(d.maintenanceDone))rows.push(['Maintenance Done',d.maintenanceDone]);
     return'<div class="tbl-card" style="margin-bottom:10px;cursor:pointer;padding:14px 16px" onclick="openReportDetail(reportData['+(d.id-1)+'])">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
       +'<span style="font-weight:600;font-size:14px">'+d.team+'</span>'
@@ -1139,7 +1139,7 @@ function gSort(key){gSortState.asc=gSortState.key===key?!gSortState.asc:true;gSo
 
 // ── DETAIL PANELS ─────────────────────────────────────────────────────────
 function openReportDetail(d){
-  var hasFlag=d.incidents||d.followUp||d.followUp2||d.buildingRepairs||d.techIssues;
+  var hasFlag=hasContent(d.incidents)||hasContent(d.followUp)||hasContent(d.followUp2)||hasContent(d.buildingRepairs)||hasContent(d.techIssues);
   document.getElementById('d-content').innerHTML=
     '<div class="d-title">'+d.team+'</div>'
     +'<div class="d-sub">'+(d.date||d.timestamp)+' &nbsp;·&nbsp; Submitted by '+d.name+'</div>'
@@ -1149,10 +1149,10 @@ function openReportDetail(d){
     +'<div class="stat-grid">'+stat('First-Time Guests',d.firstTimeGuests)+stat('Connect Cards In',d.connectCards)+stat('Entered in PC',d.connectEntered)+stat('Sign-Ups',d.signUps)+stat('Live Stream',d.liveStream)+'</div>'
     +tblock('Areas of Celebration',d.celebrations)+tblock('Other Info',d.otherInfo)
     +(hasFlag?'<div class="d-sec">Flags & Follow-ups</div>'
-      +(d.followUp?tblock('Follow-up',d.followUp):'')+(d.followUp2?tblock('Add\'l Follow-up',d.followUp2):'')
-      +(d.incidents?tblock('Incident',d.incidents):'')+(d.actionSteps?tblock('Action Steps',d.actionSteps):'')
-      +(d.techIssues?tblock('Tech Issues',d.techIssues):'')+(d.buildingRepairs?tblock('Building Repairs',d.buildingRepairs):'')
-      +(d.maintenanceDone?tblock('Maintenance Done',d.maintenanceDone):''):'')
+      +(hasContent(d.followUp)?tblock('Follow-up',d.followUp):'')+(hasContent(d.followUp2)?tblock('Add\'l Follow-up',d.followUp2):'')
+      +(hasContent(d.incidents)?tblock('Incident',d.incidents):'')+(hasContent(d.actionSteps)?tblock('Action Steps',d.actionSteps):'')
+      +(hasContent(d.techIssues)?tblock('Tech Issues',d.techIssues):'')+(hasContent(d.buildingRepairs)?tblock('Building Repairs',d.buildingRepairs):'')
+      +(hasContent(d.maintenanceDone)?tblock('Maintenance Done',d.maintenanceDone):''):'')
     +'<div style="margin-top:10px;font-size:11px;color:var(--g300)">Submitted: '+d.timestamp+'</div>';
   openOv();
 }
@@ -1222,6 +1222,12 @@ function closeOv(){document.getElementById('overlay').classList.remove('open');}
 function closeOverlay(e){if(e.target===document.getElementById('overlay'))closeOv();}
 
 // ── HELPERS ───────────────────────────────────────────────────────────────
+function hasContent(val){
+  if(!val)return false;
+  var v=val.toString().trim().toLowerCase();
+  if(!v)return false;
+  return!/^(no|n\/a|na|n\.a\.|none|nothing|nope|not applicable|nil|n|no issues|no issues\.|no concerns|no follow.?up|not needed|not required|n\/a\.|-)\.?$/.test(v);
+}
 function setEl(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
 function sum(data,key){return data.reduce(function(a,d){return a+(d[key]||0);},0);}
 function avg(data,key){var v=data.map(function(d){return d[key];}).filter(function(x){return x>0;});return v.length?Math.round(v.reduce(function(a,b){return a+b;},0)/v.length):0;}
