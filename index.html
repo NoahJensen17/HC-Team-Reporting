@@ -36,8 +36,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .brand-text .t1{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.2px}
 .brand-text .t2{font-size:11px;color:rgba(255,255,255,.45);margin-top:1px}
 .nav-tabs{display:flex;gap:3px;flex:1;justify-content:center}
-.nav-tab{color:rgba(255,255,255,.5);padding:7px 15px;border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;border:none;background:none;white-space:nowrap}
-.nav-tab:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.08)}
+.nav-tab{color:rgba(255,255,255,.75);padding:7px 15px;border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;border:none;background:none;white-space:nowrap}
+.nav-tab:hover{color:#fff;background:rgba(255,255,255,.1)}
 .nav-tab.active{color:var(--navy);background:#fff}
 .nav-status{font-size:11px;color:rgba(255,255,255,.35);flex-shrink:0;text-align:right}
 
@@ -252,7 +252,6 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     <button class="nav-tab" onclick="switchSection('reports')">Sunday Reports</button>
     <button class="nav-tab" onclick="switchSection('onboarding')">Onboarding</button>
   </div>
-  <div class="nav-status" id="load-status">Loading…</div>
 </nav>
 
 <!-- Period Bar -->
@@ -685,7 +684,7 @@ window.onload=function(){
   fetch(sheetURL(SHEET_ID_ONBOARDING,TAB_ONBOARDING)).then(function(r){return r.json();})
     .then(function(d){onboardData=rowsToObjects(d.values).map(mapOnboarding);onDataLoaded();}).catch(onErr);
 };
-function onErr(e){document.getElementById('load-status').textContent='Error loading data';console.error(e);}
+function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
   loaded++;
   if(loaded<3)return;
@@ -698,7 +697,6 @@ function onDataLoaded(){
   var gt=[];gradsData.forEach(function(d){if(d.teams)d.teams.split(',').forEach(function(t){var tr=t.trim();if(tr&&!gt.includes(tr))gt.push(tr);});});
   fillSelect('g-team',gt.sort());
   fillSelect('o-team',uniq(onboardData,'team'));
-  document.getElementById('load-status').textContent=reportData.length+' reports · '+gradsData.length+' grads · '+onboardData.length+' onboarding';
   renderAll();
 }
 function renderAll(){
