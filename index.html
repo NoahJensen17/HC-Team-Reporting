@@ -719,7 +719,7 @@ function renderPeriodLabel(){
   var b=getPeriodBounds(G,OFF);
   document.getElementById('period-lbl').textContent=b.label;
   var now=new Date();
-  var futureStart=getPeriodBounds(G,1).start;
+  var futureStart=getPeriodBounds(G,OFF+1).start;
   document.getElementById('p-next').disabled=futureStart>now;
 }
 
@@ -857,7 +857,7 @@ function renderDonutChart(){
   var ctx=document.getElementById('chart-donut').getContext('2d');
   var cfg={type:'doughnut',data:{labels:['Not Started','In Progress','Complete'],
     datasets:[{data:[notstart,inprog,complete],backgroundColor:['#e2e8f0','#5BB8F5','#10b981'],borderWidth:0,hoverOffset:4}]},
-    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1b2a',padding:8,cornerRadius:8}}}};
+    options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1b2a',padding:8,cornerRadius:8}}}};
   if(chartDonut){chartDonut.destroy();chartDonut=null;}
   chartDonut=new Chart(ctx,cfg);
   document.getElementById('donut-leg').innerHTML=
