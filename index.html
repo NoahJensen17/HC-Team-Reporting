@@ -799,8 +799,7 @@ function renderBreakdownChart(cur,b){
     type:'bar',
     data:{labels:labels,datasets:[
       {label:'Served',data:served,backgroundColor:'#5BB8F5',borderRadius:5,borderSkipped:false},
-      {label:'Guests',data:guests,backgroundColor:'#10b981',borderRadius:5,borderSkipped:false},
-      {label:'Connect Cards',data:cards,backgroundColor:'#f59e0b',borderRadius:5,borderSkipped:false}
+      {label:'Guests',data:guests,backgroundColor:'#10b981',borderRadius:5,borderSkipped:false}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:14,font:{size:11}}},
@@ -812,7 +811,7 @@ function renderBreakdownChart(cur,b){
   });
 
   var subLabels={week:'by day of week',month:'by Sunday',quarter:'by month',year:'by month'};
-  document.getElementById('breakdown-sub').textContent='Served, Guests & Connect Cards — '+subLabels[G];
+  document.getElementById('breakdown-sub').textContent='Served & Guests — '+subLabels[G];
 }
 
 function renderTrendChart(){
@@ -830,8 +829,7 @@ function renderTrendChart(){
     type:'line',
     data:{labels:labels,datasets:[
       {label:'Served',data:periods.map(function(p){return p.served;}),borderColor:'#5BB8F5',backgroundColor:'rgba(91,184,245,0.12)',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2},
-      {label:'Guests',data:periods.map(function(p){return p.guests;}),borderColor:'#10b981',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2},
-      {label:'Connect Cards',data:periods.map(function(p){return p.cards;}),borderColor:'#f59e0b',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2}
+      {label:'Guests',data:periods.map(function(p){return p.guests;}),borderColor:'#10b981',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:14,font:{size:11}}},
@@ -843,7 +841,7 @@ function renderTrendChart(){
   };
   chartTrend=new Chart(ctx,cfg);
   var nLabel={week:'weeks',month:'months',quarter:'quarters',year:'years'};
-  document.getElementById('trend-sub').textContent='Served, Guests & Connect Cards — last '+nPeriods+' '+nLabel[G];
+  document.getElementById('trend-sub').textContent='Served & Guests — last '+nPeriods+' '+nLabel[G];
 }
 
 function renderDonutChart(){
