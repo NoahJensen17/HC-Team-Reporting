@@ -1224,9 +1224,15 @@ function closeOverlay(e){if(e.target===document.getElementById('overlay'))closeO
 // ── HELPERS ───────────────────────────────────────────────────────────────
 function hasContent(val){
   if(!val)return false;
-  var v=val.toString().trim().toLowerCase();
+  var v=val.toString().trim().toLowerCase().replace(/\.+$/,'');
   if(!v)return false;
-  return!/^(no|n\/a|na|n\.a\.|none|nothing|nope|not applicable|nil|n|no issues|no issues\.|no concerns|no follow.?up|not needed|not required|n\/a\.|-)\.?$/.test(v);
+  // Exact no/none responses
+  if(/^(no|n\/a|na|n\.a\.|none|nothing|nope|not applicable|nil|n|no concerns|no follow.?up|not needed|not required|-)$/.test(v))return false;
+  // Any phrase containing "no [x] issues/problems/concerns/incidents"
+  if(/no\s+(technical|tech|major|building|facility|maintenance|known|current|other|additional|further|new|any)?\s*(issues?|problems?|concerns?|incidents?|repairs?|follow.?ups?|comments?|notes?)/.test(v))return false;
+  // "has no issues", "there are no issues", "had no issues"
+  if(/(has|have|had|there are|there were)\s+no\s+\w/.test(v))return false;
+  return true;
 }
 function setEl(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
 function sum(data,key){return data.reduce(function(a,d){return a+(d[key]||0);},0);}
