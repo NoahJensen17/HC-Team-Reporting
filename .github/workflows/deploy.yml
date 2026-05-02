@@ -1,0 +1,41 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject Planning Center credentials
+        env:
+          PCO_APP_ID: ${{ secrets.PCO_APP_ID }}
+          PCO_SECRET: ${{ secrets.PCO_SECRET }}
+        run: |
+          sed -i "s|var PCO_APP_ID='';  // injected at deploy time via GitHub Actions|var PCO_APP_ID='${PCO_APP_ID}';|" index.html
+          sed -i "s|var PCO_SECRET='';  // injected at deploy time via GitHub Actions|var PCO_SECRET='${PCO_SECRET}';|" index.html
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HC Ministry App</title>
+<title>HC Team Reporting</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -68,6 +68,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .hc-val{font-size:26px;font-weight:700;color:var(--g800);letter-spacing:-.5px;line-height:1;margin-bottom:5px}
 .hc-delta{font-size:11px;font-weight:500;min-height:15px}
 .hc-delta.pos{color:var(--green)}.hc-delta.neg{color:var(--red)}.hc-delta.neu{color:var(--g400)}
+.hc-sub{font-size:10px;color:var(--g400);margin-top:4px;font-weight:500}
+.pc-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:700;background:var(--bluef);color:var(--blue2);border-radius:3px;padding:1px 5px;letter-spacing:.3px;vertical-align:middle;margin-left:5px;border:1px solid rgba(33,150,211,.2)}
 
 /* CHART CARDS */
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:14px}
@@ -243,7 +245,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   <div class="brand">
     <canvas id="nav-icon" width="34" height="34" style="border-radius:8px;flex-shrink:0"></canvas>
     <div class="brand-text">
-      <div class="t1">HC Ministry App</div>
+      <div class="t1">HC Team Reporting</div>
       <div class="t2">Team Reporting &amp; Onboarding</div>
     </div>
   </div>
@@ -275,7 +277,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <div class="page">
   <div class="hero-grid">
     <div class="hcard cn"><div class="hc-lbl">Reports Submitted</div><div class="hc-val" id="g-rpts">—</div><div class="hc-delta neu" id="g-rpts-d"></div></div>
-    <div class="hcard cb"><div class="hc-lbl">Total Served</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div></div>
+    <div class="hcard cb"><div class="hc-lbl">Total Served</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div><div class="hc-sub" id="g-ci-total" style="display:none"></div></div>
     <div class="hcard cg"><div class="hc-lbl">First-Time Guests</div><div class="hc-val" id="g-gst">—</div><div class="hc-delta neu" id="g-gst-d"></div></div>
     <div class="hcard ca"><div class="hc-lbl">Connect Cards</div><div class="hc-val" id="g-crd">—</div><div class="hc-delta neu" id="g-crd-d"></div></div>
     <div class="hcard cp"><div class="hc-lbl">Sign-Ups</div><div class="hc-val" id="g-su">—</div><div class="hc-delta neu" id="g-su-d"></div></div>
@@ -363,11 +365,13 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <div class="mcard"><div class="mc-lbl">Avg Rally</div><div class="mc-val ca" id="a-rly">—</div></div>
       <div class="mcard"><div class="mc-lbl">Avg Wed Prayer</div><div class="mc-val cp" id="a-pry">—</div></div>
       <div class="mcard"><div class="mc-lbl">Total Active Leaders</div><div class="mc-val cg" id="a-act">—</div></div>
+      <div class="mcard" id="a-pco-card" style="display:none"><div class="mc-lbl">Avg Church Attendance<span class="pc-badge">PC</span></div><div class="mc-val cg" id="a-pco">—</div></div>
     </div>
     <div class="tbl-card"><table><thead><tr>
       <th>Date</th><th>Team</th><th>Scheduled</th><th>Served</th>
       <th>Sat in Service</th><th class="hide-sm">Rally</th>
       <th class="hide-sm">Min Leaders</th><th class="hide-sm">Wed Prayer</th>
+      <th class="hide-sm">Church Attn.<span class="pc-badge">PC</span></th>
     </tr></thead><tbody id="a-body"></tbody></table></div>
   </div>
 
@@ -379,11 +383,13 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <div class="mcard"><div class="mc-lbl">Entered in PC</div><div class="mc-val cg" id="gg-cpc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Sign-Ups</div><div class="mc-val ca" id="gg-su">—</div></div>
       <div class="mcard"><div class="mc-lbl">Live Stream</div><div class="mc-val cb" id="gg-ls">—</div></div>
+      <div class="mcard" id="gg-pco-card" style="display:none"><div class="mc-lbl">Church Attendance<span class="pc-badge">PC</span></div><div class="mc-val cg" id="gg-pco">—</div></div>
     </div>
     <div class="tbl-card"><table><thead><tr>
       <th>Date</th><th>Team</th><th>Guests</th>
       <th>Cards In</th><th>In Planning Center</th>
       <th class="hide-sm">Sign-Ups</th><th class="hide-sm">Live Stream</th>
+      <th class="hide-sm">Church Attn.<span class="pc-badge">PC</span></th>
     </tr></thead><tbody id="gg-body"></tbody></table></div>
   </div>
 
@@ -481,6 +487,8 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────
 var API_KEY='AIzaSyDnkoRHItScDLH1jU8Zr4IXugHHWD0u0sg';
+var PCO_APP_ID='';  // injected at deploy time via GitHub Actions
+var PCO_SECRET='';  // injected at deploy time via GitHub Actions
 var SHEET_ID_REPORTS='1MqsXbWaA0KHxWmVgF82-sK5S8qmlYuMYzltzXD5gZhc';
 var SHEET_ID_GRADS='1snqn4iBqhwiZ8xShTwCM0mI33vygADm4melcEmjEmuA';
 var SHEET_ID_ONBOARDING='1yF8d_WGxj4f4E12D5Wu32vTN0aCUHziLRHqdv7Ce62I';
@@ -494,6 +502,118 @@ var reportData=[], gradsData=[], onboardData=[];
 var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true};
 var loaded=0;
 var chartBreakdown=null, chartTrend=null, chartDonut=null;
+
+// ── PLANNING CENTER STATE ─────────────────────────────────────────────────
+var pcoReady=false;
+var pcoServicesByDate={};   // 'M/D/YYYY' → [{serviceType, title}]
+var pcoCheckInsByDate={};   // 'M/D/YYYY' → {total, regular, guest}
+var pcoPersonCache={};      // 'search term' → person object or null
+
+// ── PLANNING CENTER API ───────────────────────────────────────────────────
+function pcoEnabled(){return!!(PCO_APP_ID&&PCO_SECRET);}
+function pcoAuth(){return'Basic '+btoa(PCO_APP_ID+':'+PCO_SECRET);}
+function pcoFetch(path){
+  return fetch('https://api.planningcenteronline.com'+path,{headers:{'Authorization':pcoAuth()}})
+    .then(function(r){if(!r.ok)throw new Error('PCO '+r.status);return r.json();});
+}
+function pcoDateKey(iso){
+  if(!iso)return null;
+  var d=new Date(iso);
+  if(isNaN(d.getTime()))return null;
+  return(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+}
+
+function loadPCOServices(){
+  return pcoFetch('/services/v2/service_types?per_page=25')
+    .then(function(d){
+      var types=(d.data||[]).slice(0,8);
+      return Promise.all(types.map(function(st){
+        return pcoFetch('/services/v2/service_types/'+st.id+'/plans?filter=past&per_page=50&order=-sort_date')
+          .then(function(pd){
+            (pd.data||[]).forEach(function(plan){
+              var key=pcoDateKey(plan.attributes.sort_date);
+              if(!key)return;
+              if(!pcoServicesByDate[key])pcoServicesByDate[key]=[];
+              pcoServicesByDate[key].push({serviceType:st.attributes.name,title:plan.attributes.title||''});
+            });
+          }).catch(function(){});
+      }));
+    });
+}
+
+function loadPCOCheckIns(){
+  return pcoFetch('/check-ins/v2/events?per_page=50&order=-updated_at')
+    .then(function(d){
+      var events=(d.data||[]).slice(0,20);
+      return Promise.all(events.map(function(ev){
+        return pcoFetch('/check-ins/v2/events/'+ev.id+'/event_periods?per_page=50&order=-starts_at')
+          .then(function(pd){
+            (pd.data||[]).forEach(function(ep){
+              var key=pcoDateKey(ep.attributes.starts_at);
+              if(!key)return;
+              var total=(ep.attributes.regular_count||0)+(ep.attributes.guest_count||0)+(ep.attributes.volunteer_count||0);
+              if(!total)return;
+              if(!pcoCheckInsByDate[key])pcoCheckInsByDate[key]={total:0,regular:0,guest:0};
+              pcoCheckInsByDate[key].total+=total;
+              pcoCheckInsByDate[key].regular+=(ep.attributes.regular_count||0);
+              pcoCheckInsByDate[key].guest+=(ep.attributes.guest_count||0);
+            });
+          }).catch(function(){});
+      }));
+    });
+}
+
+function loadPCOData(){
+  if(!pcoEnabled()){pcoReady=true;return;}
+  Promise.all([loadPCOServices(),loadPCOCheckIns()])
+    .then(function(){pcoReady=true;if(loaded===3)renderAll();})
+    .catch(function(e){console.warn('PCO load error:',e);pcoReady=true;if(loaded===3)renderAll();});
+}
+
+function pcoSearchPerson(term){
+  if(!pcoEnabled()||!term)return Promise.resolve(null);
+  var key=term.trim().toLowerCase();
+  if(pcoPersonCache.hasOwnProperty(key))return Promise.resolve(pcoPersonCache[key]);
+  return pcoFetch('/people/v2/people?where[search_name]='+encodeURIComponent(term.trim())+'&per_page=5')
+    .then(function(d){
+      var result=(d.data&&d.data.length)?d.data[0]:null;
+      pcoPersonCache[key]=result;return result;
+    }).catch(function(){pcoPersonCache[key]=null;return null;});
+}
+
+function renderPCOPersonSlot(slotId,term){
+  var el=document.getElementById(slotId);
+  if(!el)return;
+  if(!pcoEnabled()){el.innerHTML='<div style="font-size:12px;color:var(--g300);font-style:italic">PC credentials not configured.</div>';return;}
+  el.innerHTML='<div style="font-size:12px;color:var(--g400)"><span class="lds" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Searching Planning Center…</div>';
+  pcoSearchPerson(term).then(function(person){
+    if(!person){el.innerHTML='<div style="font-size:12px;color:var(--g400);font-style:italic">Not found in Planning Center.</div>';return;}
+    var a=person.attributes;
+    var initials=((a.first_name||'').charAt(0)+(a.last_name||'').charAt(0)).toUpperCase();
+    var pcUrl='https://people.planningcenteronline.com/people/app/people/'+person.id;
+    el.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--g50);border-radius:var(--rs);border:1px solid var(--g200)">'
+      +(a.avatar?'<img src="'+a.avatar+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">'
+        :'<div style="width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">'+initials+'</div>')
+      +'<div><div style="font-weight:600;font-size:13px">'+(a.first_name||'')+' '+(a.last_name||'')+'</div>'
+      +'<div style="font-size:11px;color:var(--g500)">'+(a.membership||'')+(a.status?' &nbsp;&middot;&nbsp; '+a.status:'')+'</div>'
+      +'<a href="'+pcUrl+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue2);text-decoration:none">View in Planning Center →</a>'
+      +'</div></div>';
+  });
+}
+
+function pcoServicesHtml(dateKey){
+  if(!pcoEnabled()||!pcoReady)return'';
+  var plans=pcoServicesByDate[dateKey];
+  if(!plans||!plans.length)return'<div style="font-size:12px;color:var(--g400);font-style:italic">No service plans found for this date.</div>';
+  var types=[...new Set(plans.map(function(p){return p.serviceType;}))];
+  return'<div style="font-size:12px;color:var(--g600)">'+types.join(', ')+'</div>';
+}
+
+function pcoPeriodCheckIns(start,end){
+  return Object.keys(pcoCheckInsByDate).reduce(function(sum,dt){
+    var d=parseDate(dt);return(d&&d>=start&&d<=end)?sum+pcoCheckInsByDate[dt].total:sum;
+  },0);
+}
 
 // ── CHART DEFAULTS ───────────────────────────────────────────────────────
 Chart.defaults.font.family="'Inter',sans-serif";
@@ -683,6 +803,7 @@ window.onload=function(){
     .then(function(d){gradsData=rowsToObjects(d.values).map(mapGrad);onDataLoaded();}).catch(onErr);
   fetch(sheetURL(SHEET_ID_ONBOARDING,TAB_ONBOARDING)).then(function(r){return r.json();})
     .then(function(d){onboardData=rowsToObjects(d.values).map(mapOnboarding);onDataLoaded();}).catch(onErr);
+  loadPCOData();
 };
 function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
@@ -745,6 +866,14 @@ function renderGlance(){
   setMetric('g-crd','g-crd-d',sum(cur,'connectCards'),sum(prev,'connectCards'));
   setMetric('g-su','g-su-d',sum(cur,'signUps'),sum(prev,'signUps'));
   setMetric('g-chk','g-chk-d',chkCur,chkPrv,function(v){return v+'%';});
+
+  // PCO check-ins sub-line on Total Served card
+  if(pcoReady){
+    var ciTotal=pcoPeriodCheckIns(b.start,b.end);
+    var ciEl=document.getElementById('g-ci-total');
+    if(ciEl&&ciTotal){ciEl.innerHTML='<span class="pc-badge">PC</span> Church check-ins: '+ciTotal.toLocaleString();ciEl.style.display='';}
+    else if(ciEl)ciEl.style.display='none';
+  }
 
   // Team period label
   document.getElementById('team-period-lbl').textContent=b.label;
@@ -991,24 +1120,41 @@ function renderAttendance(data){
   setEl('a-sch',avg(data,'scheduled'));setEl('a-srv',avg(data,'served'));
   setEl('a-sat',avg(data,'satInService'));setEl('a-rly',avg(data,'attendedRally'));
   setEl('a-pry',avg(data,'wednesdayPrayer'));setEl('a-act',sum(data,'totalActive'));
+  if(pcoReady){
+    var b2=getPeriodBounds(G,OFF);
+    var ciDates=Object.keys(pcoCheckInsByDate).filter(function(dt){var d2=parseDate(dt);return d2&&d2>=b2.start&&d2<=b2.end;});
+    var ciSum=ciDates.reduce(function(s,dt){return s+pcoCheckInsByDate[dt].total;},0);
+    var ciCard=document.getElementById('a-pco-card');
+    if(ciCard){ciCard.style.display='';setEl('a-pco',ciDates.length?Math.round(ciSum/ciDates.length):'—');}
+  }
   var tbody=document.getElementById('a-body');tbody.innerHTML='';
   sortArr(data,'date',false).forEach(function(d){
+    var ciVal=pcoReady&&pcoCheckInsByDate[d.date]?pcoCheckInsByDate[d.date].total.toLocaleString():'—';
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'
-      +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td><td class="hide-sm">'+d.wednesdayPrayer+'</td>';
+      +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td><td class="hide-sm">'+d.wednesdayPrayer+'</td>'
+      +'<td class="hide-sm">'+ciVal+'</td>';
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
   });
 }
 function renderGuests(data){
   setEl('gg-gst',sum(data,'firstTimeGuests'));setEl('gg-cin',sum(data,'connectCards'));
   setEl('gg-cpc',sum(data,'connectEntered'));setEl('gg-su',sum(data,'signUps'));setEl('gg-ls',sum(data,'liveStream'));
+  if(pcoReady){
+    var b3=getPeriodBounds(G,OFF);
+    var ciTotal2=pcoPeriodCheckIns(b3.start,b3.end);
+    var ggCard=document.getElementById('gg-pco-card');
+    if(ggCard){ggCard.style.display='';setEl('gg-pco',ciTotal2?ciTotal2.toLocaleString():'—');}
+  }
   var tbody=document.getElementById('gg-body');tbody.innerHTML='';
   sortArr(data,'date',false).forEach(function(d){
+    var ciVal2=pcoReady&&pcoCheckInsByDate[d.date]?pcoCheckInsByDate[d.date].total.toLocaleString():'—';
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.firstTimeGuests+'</td><td>'+d.connectCards+'</td><td>'+d.connectEntered+'</td>'
-      +'<td class="hide-sm">'+d.signUps+'</td><td class="hide-sm">'+d.liveStream+'</td>';
+      +'<td class="hide-sm">'+d.signUps+'</td><td class="hide-sm">'+d.liveStream+'</td>'
+      +'<td class="hide-sm">'+ciVal2+'</td>';
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
   });
 }
@@ -1151,6 +1297,7 @@ function openReportDetail(d){
       +(hasContent(d.incidents)?tblock('Incident',d.incidents):'')+(hasContent(d.actionSteps)?tblock('Action Steps',d.actionSteps):'')
       +(hasContent(d.techIssues)?tblock('Tech Issues',d.techIssues):'')+(hasContent(d.buildingRepairs)?tblock('Building Repairs',d.buildingRepairs):'')
       +(hasContent(d.maintenanceDone)?tblock('Maintenance Done',d.maintenanceDone):''):'')
+    +(pcoEnabled()&&pcoReady?'<div class="d-sec">Planning Center Services</div><div style="margin-bottom:10px">'+pcoServicesHtml(d.date)+'</div>':'')
     +'<div style="margin-top:10px;font-size:11px;color:var(--g300)">Submitted: '+d.timestamp+'</div>';
   openOv();
 }
@@ -1171,8 +1318,10 @@ function openOnboardDetail(d){
     +'<div class="d-sec">Contact</div>'
     +'<div class="stat-grid">'+stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+'</div>'
     +(d.notes?tblock('Notes',d.notes):'')
-    +'<div style="margin-top:10px;font-size:11px;color:var(--g300)">Onboarding Complete: '+(d.complete||'No')+'</div>';
+    +'<div style="margin-top:10px;font-size:11px;color:var(--g300)">Onboarding Complete: '+(d.complete||'No')+'</div>'
+    +(pcoEnabled()?'<div class="d-sec">Planning Center Profile</div><div id="pco-ob-slot"></div>':'');
   openOv();
+  if(pcoEnabled())renderPCOPersonSlot('pco-ob-slot',d.email||d.name);
 }
 function openGradDetail(d,linked){
   document.getElementById('d-content').innerHTML=
@@ -1189,8 +1338,10 @@ function openGradDetail(d,linked){
       +'<span style="font-weight:600">'+linked.progress+'%</span>'
       +'<span style="font-size:12px;color:var(--g400)">'+linked.team+'</span></div>'
       +'<div style="font-size:12px;color:var(--g400)">Go to Onboarding tab to see full checklist.</div>'
-      :'<div style="margin-top:14px;font-size:13px;color:var(--g300);font-style:italic">No linked onboarding record found.</div>');
+      :'<div style="margin-top:14px;font-size:13px;color:var(--g300);font-style:italic">No linked onboarding record found.</div>')
+    +(pcoEnabled()?'<div class="d-sec">Planning Center Profile</div><div id="pco-gr-slot"></div>':'');
   openOv();
+  if(pcoEnabled())renderPCOPersonSlot('pco-gr-slot',d.email||d.fullName);
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
