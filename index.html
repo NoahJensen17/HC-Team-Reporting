@@ -518,9 +518,10 @@ function pcoFetch(path){
 }
 function pcoDateKey(iso){
   if(!iso)return null;
-  var d=new Date(iso);
-  if(isNaN(d.getTime()))return null;
-  return(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+  // Extract date portion directly to avoid UTC→local timezone shift on date-only ISO strings
+  var m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m)return null;
+  return parseInt(m[2])+'/'+parseInt(m[3])+'/'+m[1];
 }
 
 function loadPCOServices(){
@@ -564,10 +565,14 @@ function loadPCOCheckIns(){
 }
 
 function loadPCOData(){
-  if(!pcoEnabled()){pcoReady=true;return;}
+  if(!pcoEnabled()){console.log('PCO: credentials not set, skipping.');pcoReady=true;return;}
+  console.log('PCO: loading data...');
   Promise.all([loadPCOServices(),loadPCOCheckIns()])
-    .then(function(){pcoReady=true;if(loaded===3)renderAll();})
-    .catch(function(e){console.warn('PCO load error:',e);pcoReady=true;if(loaded===3)renderAll();});
+    .then(function(){
+      console.log('PCO: loaded. Services dates:',Object.keys(pcoServicesByDate).length,'Check-in dates:',Object.keys(pcoCheckInsByDate).length);
+      pcoReady=true;if(loaded===3)renderAll();
+    })
+    .catch(function(e){console.error('PCO load error:',e);pcoReady=true;if(loaded===3)renderAll();});
 }
 
 function pcoSearchPerson(term){
