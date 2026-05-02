@@ -74,15 +74,9 @@ async function main() {
   } catch (e) { console.warn('PCO Services fetch failed:', e.message); }
 
   // --- Check-Ins ---
-  // Paginate through ALL events and check each one for recent event_periods.
-  // Can't use top-level event_periods (PCO returns 404) and can't rely on
-  // event updated_at ordering (metadata changes, not check-in activity).
+  // Paginate through ALL events and collect all event_periods with non-zero attendance.
+  // No server-side date filtering — the app handles date windowing at render time.
   try {
-    const since = new Date();
-    since.setFullYear(since.getFullYear() - 2);
-    const sinceMs = since.getTime();
-
-    // Collect all events across pages
     const allEvents = [];
     let evPath = '/check-ins/v2/events?per_page=100';
     while (evPath) {
@@ -91,26 +85,19 @@ async function main() {
       const next = evResp.links && evResp.links.next;
       evPath = next ? next.replace('https://api.planningcenteronline.com', '') : null;
     }
-    console.log(`PCO Check-Ins: scanning ${allEvents.length} events for recent activity...`);
+    console.log(`PCO Check-Ins: scanning ${allEvents.length} events...`);
 
+    let activeEvents = 0;
     for (const ev of allEvents) {
       try {
-        // Fetch most-recent-first; skip this event entirely if newest period is older than 2 years
         const periodsResp = await pcoGet(
           `/check-ins/v2/events/${ev.id}/event_periods?per_page=100&order=-starts_at`
         );
         const periods = periodsResp.data || [];
-        if (!periods.length) continue;
-        // Quick bail: if the newest period is outside our window, skip this event
-        const newestMs = new Date((periods[0].attributes.starts_at || '').split('T')[0]).getTime();
-        if (newestMs < sinceMs) continue;
-
+        let gotData = false;
         for (const ep of periods) {
           const key = dateKey(ep.attributes.starts_at);
           if (!key) continue;
-          // Client-side date filter
-          const epMs = new Date(ep.attributes.starts_at.split('T')[0]).getTime();
-          if (epMs < sinceMs) continue;
           const total = (ep.attributes.regular_count || 0)
             + (ep.attributes.guest_count || 0)
             + (ep.attributes.volunteer_count || 0);
@@ -119,10 +106,15 @@ async function main() {
           checkInsByDate[key].total += total;
           checkInsByDate[key].regular += (ep.attributes.regular_count || 0);
           checkInsByDate[key].guest += (ep.attributes.guest_count || 0);
+          gotData = true;
         }
-      } catch (e) { /* skip events that error */ }
+        if (gotData) {
+          activeEvents++;
+          console.log(`  Event "${ev.attributes.name}" (${ev.id}): newest period starts_at = ${periods[0] && periods[0].attributes.starts_at}`);
+        }
+      } catch (e) { console.warn(`  Event ${ev.id} error:`, e.message); }
     }
-    console.log(`PCO Check-Ins: ${Object.keys(checkInsByDate).length} dates loaded`);
+    console.log(`PCO Check-Ins: ${activeEvents} active events, ${Object.keys(checkInsByDate).length} total dates loaded`);
   } catch (e) { console.warn('PCO Check-Ins fetch failed:', e.message); }
 
   const output = `window._PCO_STATIC=${JSON.stringify({ servicesByDate, checkInsByDate })};\n`;
