@@ -74,33 +74,53 @@ async function main() {
   } catch (e) { console.warn('PCO Services fetch failed:', e.message); }
 
   // --- Check-Ins ---
-  // Fetch event_periods directly (top-level) filtered to last 2 years.
-  // Avoids the event updated_at ordering problem where inactive old events
-  // sort ahead of the currently-active Sunday service event.
+  // Paginate through ALL events and check each one for recent event_periods.
+  // Can't use top-level event_periods (PCO returns 404) and can't rely on
+  // event updated_at ordering (metadata changes, not check-in activity).
   try {
     const since = new Date();
     since.setFullYear(since.getFullYear() - 2);
-    const sinceStr = since.toISOString().split('T')[0];
-    let path = `/check-ins/v2/event_periods?where[starts_at][gte]=${sinceStr}&per_page=100&order=-starts_at`;
-    let pages = 0;
-    while (path && pages < 10) {
-      const resp = await pcoGet(path);
-      for (const ep of (resp.data || [])) {
-        const key = dateKey(ep.attributes.starts_at);
-        if (!key) continue;
-        const total = (ep.attributes.regular_count || 0)
-          + (ep.attributes.guest_count || 0)
-          + (ep.attributes.volunteer_count || 0);
-        if (!total) continue;
-        if (!checkInsByDate[key]) checkInsByDate[key] = { total: 0, regular: 0, guest: 0 };
-        checkInsByDate[key].total += total;
-        checkInsByDate[key].regular += (ep.attributes.regular_count || 0);
-        checkInsByDate[key].guest += (ep.attributes.guest_count || 0);
-      }
-      // Follow pagination if more pages exist
-      const next = resp.links && resp.links.next;
-      path = next ? next.replace('https://api.planningcenteronline.com', '') : null;
-      pages++;
+    const sinceMs = since.getTime();
+
+    // Collect all events across pages
+    const allEvents = [];
+    let evPath = '/check-ins/v2/events?per_page=100';
+    while (evPath) {
+      const evResp = await pcoGet(evPath);
+      allEvents.push(...(evResp.data || []));
+      const next = evResp.links && evResp.links.next;
+      evPath = next ? next.replace('https://api.planningcenteronline.com', '') : null;
+    }
+    console.log(`PCO Check-Ins: scanning ${allEvents.length} events for recent activity...`);
+
+    for (const ev of allEvents) {
+      try {
+        // Fetch most-recent-first; skip this event entirely if newest period is older than 2 years
+        const periodsResp = await pcoGet(
+          `/check-ins/v2/events/${ev.id}/event_periods?per_page=100&order=-starts_at`
+        );
+        const periods = periodsResp.data || [];
+        if (!periods.length) continue;
+        // Quick bail: if the newest period is outside our window, skip this event
+        const newestMs = new Date((periods[0].attributes.starts_at || '').split('T')[0]).getTime();
+        if (newestMs < sinceMs) continue;
+
+        for (const ep of periods) {
+          const key = dateKey(ep.attributes.starts_at);
+          if (!key) continue;
+          // Client-side date filter
+          const epMs = new Date(ep.attributes.starts_at.split('T')[0]).getTime();
+          if (epMs < sinceMs) continue;
+          const total = (ep.attributes.regular_count || 0)
+            + (ep.attributes.guest_count || 0)
+            + (ep.attributes.volunteer_count || 0);
+          if (!total) continue;
+          if (!checkInsByDate[key]) checkInsByDate[key] = { total: 0, regular: 0, guest: 0 };
+          checkInsByDate[key].total += total;
+          checkInsByDate[key].regular += (ep.attributes.regular_count || 0);
+          checkInsByDate[key].guest += (ep.attributes.guest_count || 0);
+        }
+      } catch (e) { /* skip events that error */ }
     }
     console.log(`PCO Check-Ins: ${Object.keys(checkInsByDate).length} dates loaded`);
   } catch (e) { console.warn('PCO Check-Ins fetch failed:', e.message); }
