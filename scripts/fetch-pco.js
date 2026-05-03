@@ -50,10 +50,17 @@ async function main() {
   const servicesByDate = {};
   const checkInsByDate = {};
 
-  // --- Services ---
+  // --- Services + Scheduling ---
+  // Fetch plans for each service type. For plans within the last 6 months,
+  // also fetch plan_people (with team names) to show per-person scheduling status.
   try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
     const typesResp = await pcoGet('/services/v2/service_types?per_page=25');
     const types = (typesResp.data || []).slice(0, 8);
+    let schedulingFetched = 0;
+
     for (const st of types) {
       try {
         const plansResp = await pcoGet(
@@ -62,15 +69,41 @@ async function main() {
         for (const plan of (plansResp.data || [])) {
           const key = dateKey(plan.attributes.sort_date);
           if (!key) continue;
+
+          const entry = { serviceType: st.attributes.name, title: plan.attributes.title || '', people: [] };
+
+          // Fetch per-person scheduling for recent plans only
+          const planDate = new Date((plan.attributes.sort_date || '').slice(0, 10));
+          if (!isNaN(planDate.getTime()) && planDate >= sixMonthsAgo) {
+            try {
+              const ppResp = await pcoGet(
+                `/services/v2/service_types/${st.id}/plans/${plan.id}/plan_people?include=team&per_page=100`
+              );
+              // Build team name lookup from JSON:API included array
+              const teamNames = {};
+              for (const inc of (ppResp.included || [])) {
+                if (inc.type === 'Team') teamNames[inc.id] = inc.attributes.name;
+              }
+              entry.people = (ppResp.data || [])
+                .filter(p => p.attributes.status) // skip unscheduled/declined-before-scheduling
+                .map(p => ({
+                  name: p.attributes.name || '',
+                  status: p.attributes.status,           // 'C'=confirmed, 'U'=unconfirmed, 'D'=declined
+                  position: p.attributes.team_position_name || '',
+                  team: (p.relationships && p.relationships.team && p.relationships.team.data
+                    ? teamNames[p.relationships.team.data.id] : '') || ''
+                }))
+                .filter(p => p.name);
+              schedulingFetched++;
+            } catch (e) { /* skip if plan_people fails */ }
+          }
+
           if (!servicesByDate[key]) servicesByDate[key] = [];
-          servicesByDate[key].push({
-            serviceType: st.attributes.name,
-            title: plan.attributes.title || ''
-          });
+          servicesByDate[key].push(entry);
         }
       } catch (e) { console.warn(`  Services type ${st.id} error:`, e.message); }
     }
-    console.log(`PCO Services: ${Object.keys(servicesByDate).length} dates loaded`);
+    console.log(`PCO Services: ${Object.keys(servicesByDate).length} dates, scheduling fetched for ${schedulingFetched} recent plans`);
   } catch (e) { console.warn('PCO Services fetch failed:', e.message); }
 
   // --- Check-Ins ---

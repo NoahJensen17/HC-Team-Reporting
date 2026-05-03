@@ -512,8 +512,39 @@ var pcoReady=true;
 function pcoServicesHtml(dateKey){
   var plans=pcoServicesByDate[dateKey];
   if(!plans||!plans.length)return'<div style="font-size:12px;color:var(--g400);font-style:italic">No service plans found for this date.</div>';
-  var types=[...new Set(plans.map(function(p){return p.serviceType;}))];
-  return'<div style="font-size:12px;color:var(--g600)">'+types.join(', ')+'</div>';
+  var html='';
+  plans.forEach(function(plan){
+    html+='<div style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:6px">'+plan.serviceType+'</div>';
+    if(plan.people&&plan.people.length){
+      var confirmed=plan.people.filter(function(p){return p.status==='C';}).length;
+      var declined=plan.people.filter(function(p){return p.status==='D';}).length;
+      var unconf=plan.people.filter(function(p){return p.status==='U';}).length;
+      html+='<div style="font-size:11px;margin-bottom:8px">'
+        +'<span style="color:var(--green)">'+confirmed+' confirmed</span>'
+        +(unconf?' &middot; <span style="color:var(--amber)">'+unconf+' unconfirmed</span>':'')
+        +(declined?' &middot; <span style="color:var(--red)">'+declined+' declined</span>':'')
+        +'</div>';
+      var teams={};
+      plan.people.forEach(function(p){var t=p.team||'Other';if(!teams[t])teams[t]=[];teams[t].push(p);});
+      Object.keys(teams).sort().forEach(function(teamName){
+        html+='<div style="margin-bottom:10px">'
+          +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-bottom:4px">'+teamName+'</div>';
+        teams[teamName].forEach(function(m){
+          var color=m.status==='C'?'var(--green)':m.status==='D'?'var(--red)':'var(--amber)';
+          var icon=m.status==='C'?'✓':m.status==='D'?'✗':'?';
+          html+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:1px 0">'
+            +'<span style="color:'+color+';font-weight:700;width:10px;flex-shrink:0">'+icon+'</span>'
+            +'<span style="flex:1">'+m.name+'</span>'
+            +(m.position?'<span style="font-size:11px;color:var(--g400)">'+m.position+'</span>':'')
+            +'</div>';
+        });
+        html+='</div>';
+      });
+    } else {
+      html+='<div style="font-size:12px;color:var(--g400);font-style:italic;margin-bottom:8px">Scheduling data not available for this date.</div>';
+    }
+  });
+  return html;
 }
 
 function pcoPeriodCheckIns(start,end){
