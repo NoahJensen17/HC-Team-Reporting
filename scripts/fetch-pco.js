@@ -84,7 +84,7 @@ async function main() {
           if (planYear >= currentYear - 1) {
             try {
               const ppResp = await pcoGet(
-                `/services/v2/service_types/${st.id}/plans/${plan.id}/plan_people?include=team&per_page=100`
+                `/services/v2/plans/${plan.id}/plan_people?include=team&per_page=100`
               );
               // Build team name lookup from JSON:API included array
               const teamNames = {};
