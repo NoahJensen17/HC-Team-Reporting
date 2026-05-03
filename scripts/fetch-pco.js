@@ -32,6 +32,18 @@ function pcoGet(urlPath) {
           setTimeout(() => pcoGet(urlPath).then(resolve).catch(reject), 3000);
           return;
         }
+        // PCO returns 302 with redirect location in JSON body (not HTTP Location header)
+        if (res.statusCode === 302) {
+          try {
+            const loc = JSON.parse(body).location;
+            if (loc) {
+              const redirectPath = loc.replace('https://api.planningcenteronline.com', '');
+              pcoGet(redirectPath).then(resolve).catch(reject);
+              return;
+            }
+          } catch (e) {}
+          return reject(new Error(`PCO 302 with no location: ${body.slice(0, 200)}`));
+        }
         if (res.statusCode !== 200) return reject(new Error(`PCO ${res.statusCode} ${urlPath}: ${body.slice(0,200)}`));
         try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
       });
