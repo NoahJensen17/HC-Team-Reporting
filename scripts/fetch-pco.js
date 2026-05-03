@@ -102,7 +102,7 @@ async function main() {
                 }))
                 .filter(p => p.name);
               schedulingFetched++;
-            } catch (e) { /* skip if plan_people fails */ }
+            } catch (e) { console.warn(`    plan_people ${plan.id} failed:`, e.message); }
           }
 
           if (!servicesByDate[key]) servicesByDate[key] = [];
