@@ -56,11 +56,19 @@ async function main() {
   try {
     const currentYear = new Date().getFullYear();
 
-    const typesResp = await pcoGet('/services/v2/service_types?per_page=25');
-    const types = (typesResp.data || []).slice(0, 8);
+    // Fetch all service types (no page limit — main Sunday type may be beyond first 8)
+    let typesPath = '/services/v2/service_types?per_page=100';
+    const allTypes = [];
+    while (typesPath) {
+      const tr = await pcoGet(typesPath);
+      allTypes.push(...(tr.data || []));
+      const next = tr.links && tr.links.next;
+      typesPath = next ? next.replace('https://api.planningcenteronline.com', '') : null;
+    }
+    console.log(`PCO Services: found ${allTypes.length} service types`);
     let schedulingFetched = 0;
 
-    for (const st of types) {
+    for (const st of allTypes) {
       try {
         const plansResp = await pcoGet(
           `/services/v2/service_types/${st.id}/plans?filter=past&per_page=50&order=-sort_date`
