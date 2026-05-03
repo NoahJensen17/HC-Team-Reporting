@@ -54,8 +54,7 @@ async function main() {
   // Fetch plans for each service type. For plans within the last 6 months,
   // also fetch plan_people (with team names) to show per-person scheduling status.
   try {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const currentYear = new Date().getFullYear();
 
     const typesResp = await pcoGet('/services/v2/service_types?per_page=25');
     const types = (typesResp.data || []).slice(0, 8);
@@ -72,9 +71,9 @@ async function main() {
 
           const entry = { serviceType: st.attributes.name, title: plan.attributes.title || '', people: [] };
 
-          // Fetch per-person scheduling for recent plans only
-          const planDate = new Date((plan.attributes.sort_date || '').slice(0, 10));
-          if (!isNaN(planDate.getTime()) && planDate >= sixMonthsAgo) {
+          // Fetch per-person scheduling for plans in the last ~12 months (current year or prior year)
+          const planYear = parseInt(key.split('/')[2]);
+          if (planYear >= currentYear - 1) {
             try {
               const ppResp = await pcoGet(
                 `/services/v2/service_types/${st.id}/plans/${plan.id}/plan_people?include=team&per_page=100`
