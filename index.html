@@ -69,7 +69,6 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .hc-delta{font-size:11px;font-weight:500;min-height:15px}
 .hc-delta.pos{color:var(--green)}.hc-delta.neg{color:var(--red)}.hc-delta.neu{color:var(--g400)}
 .hc-sub{font-size:10px;color:var(--g400);margin-top:4px;font-weight:500}
-.pc-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:700;background:var(--bluef);color:var(--blue2);border-radius:3px;padding:1px 5px;letter-spacing:.3px;vertical-align:middle;margin-left:5px;border:1px solid rgba(33,150,211,.2)}
 
 /* CHART CARDS */
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:14px}
@@ -253,6 +252,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     <button class="nav-tab active" onclick="switchSection('glance')">Month at a Glance</button>
     <button class="nav-tab" onclick="switchSection('reports')">Sunday Reports</button>
     <button class="nav-tab" onclick="switchSection('onboarding')">Onboarding</button>
+    <button class="nav-tab" onclick="switchSection('scheduling')">Scheduling</button>
   </div>
 </nav>
 
@@ -277,7 +277,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <div class="page">
   <div class="hero-grid">
     <div class="hcard cn"><div class="hc-lbl">Reports Submitted</div><div class="hc-val" id="g-rpts">—</div><div class="hc-delta neu" id="g-rpts-d"></div></div>
-    <div class="hcard cb"><div class="hc-lbl">Total Served</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div><div class="hc-sub" id="g-ci-total" style="display:none"></div></div>
+    <div class="hcard cb"><div class="hc-lbl">Total Served</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div><div class="hc-sub" id="g-ci-total"></div></div>
     <div class="hcard cg"><div class="hc-lbl">First-Time Guests</div><div class="hc-val" id="g-gst">—</div><div class="hc-delta neu" id="g-gst-d"></div></div>
     <div class="hcard ca"><div class="hc-lbl">Connect Cards</div><div class="hc-val" id="g-crd">—</div><div class="hc-delta neu" id="g-crd-d"></div></div>
     <div class="hcard cp"><div class="hc-lbl">Sign-Ups</div><div class="hc-val" id="g-su">—</div><div class="hc-delta neu" id="g-su-d"></div></div>
@@ -365,13 +365,11 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <div class="mcard"><div class="mc-lbl">Avg Rally</div><div class="mc-val ca" id="a-rly">—</div></div>
       <div class="mcard"><div class="mc-lbl">Avg Wed Prayer</div><div class="mc-val cp" id="a-pry">—</div></div>
       <div class="mcard"><div class="mc-lbl">Total Active Leaders</div><div class="mc-val cg" id="a-act">—</div></div>
-      <div class="mcard" id="a-pco-card" style="display:none"><div class="mc-lbl">Avg Church Attendance<span class="pc-badge">PC</span></div><div class="mc-val cg" id="a-pco">—</div></div>
     </div>
     <div class="tbl-card"><table><thead><tr>
       <th>Date</th><th>Team</th><th>Scheduled</th><th>Served</th>
       <th>Sat in Service</th><th class="hide-sm">Rally</th>
       <th class="hide-sm">Min Leaders</th><th class="hide-sm">Wed Prayer</th>
-      <th class="hide-sm">Church Attn.<span class="pc-badge">PC</span></th>
     </tr></thead><tbody id="a-body"></tbody></table></div>
   </div>
 
@@ -383,13 +381,11 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <div class="mcard"><div class="mc-lbl">Entered in PC</div><div class="mc-val cg" id="gg-cpc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Sign-Ups</div><div class="mc-val ca" id="gg-su">—</div></div>
       <div class="mcard"><div class="mc-lbl">Live Stream</div><div class="mc-val cb" id="gg-ls">—</div></div>
-      <div class="mcard" id="gg-pco-card" style="display:none"><div class="mc-lbl">Church Attendance<span class="pc-badge">PC</span></div><div class="mc-val cg" id="gg-pco">—</div></div>
     </div>
     <div class="tbl-card"><table><thead><tr>
       <th>Date</th><th>Team</th><th>Guests</th>
       <th>Cards In</th><th>In Planning Center</th>
       <th class="hide-sm">Sign-Ups</th><th class="hide-sm">Live Stream</th>
-      <th class="hide-sm">Church Attn.<span class="pc-badge">PC</span></th>
     </tr></thead><tbody id="gg-body"></tbody></table></div>
   </div>
 
@@ -478,80 +474,67 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 </div>
 </div>
 
+<!-- SECTION: Scheduling -->
+<div class="sec" id="sec-scheduling">
+<div class="page">
+  <div class="metrics">
+    <div class="mcard"><div class="mc-lbl">Confirmed</div><div class="mc-val cg" id="s-conf">—</div></div>
+    <div class="mcard"><div class="mc-lbl">Unconfirmed</div><div class="mc-val ca" id="s-unci">—</div></div>
+    <div class="mcard"><div class="mc-lbl">Declined</div><div class="mc-val cr" id="s-decl">—</div></div>
+    <div class="mcard"><div class="mc-lbl">Church Check-ins</div><div class="mc-val cb" id="s-ci">—</div></div>
+  </div>
+  <div class="tbl-card">
+    <div class="tbl-toolbar">
+      <div class="srch"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="s-search" placeholder="Name or team…" oninput="applySchedFilters()"></div>
+      <select class="fsel" id="s-team" onchange="applySchedFilters()"><option value="">All teams</option></select>
+      <select class="fsel" id="s-stype" onchange="applySchedFilters()"><option value="">All service types</option></select>
+      <select class="fsel" id="s-status" onchange="applySchedFilters()">
+        <option value="">All statuses</option>
+        <option value="Confirmed">Confirmed</option>
+        <option value="Unconfirmed">Unconfirmed</option>
+        <option value="Declined">Declined</option>
+      </select>
+    </div>
+    <div class="loading" id="s-loading"><div class="lds"></div><br>Loading…</div>
+    <table id="s-table" style="display:none"><thead><tr>
+      <th onclick="sSort('plan_date')">Date</th>
+      <th onclick="sSort('service_type')" class="hide-sm">Service Type</th>
+      <th onclick="sSort('team')">Team</th>
+      <th onclick="sSort('person_name')">Person</th>
+      <th onclick="sSort('position')" class="hide-sm">Position</th>
+      <th onclick="sSort('status')">Status</th>
+    </tr></thead><tbody id="s-body"></tbody></table>
+    <div class="empty" id="s-empty" style="display:none">No assignments match filters.</div>
+  </div>
+</div>
+</div>
+
 <!-- Detail Overlay -->
 <div class="overlay" id="overlay" onclick="closeOverlay(event)">
   <div class="d-panel"><button class="d-close" onclick="closeOv()">&#x2715;</button><div id="d-content"></div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="pco-data.js"></script>
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────
 var API_KEY='AIzaSyDnkoRHItScDLH1jU8Zr4IXugHHWD0u0sg';
 var SHEET_ID_REPORTS='1MqsXbWaA0KHxWmVgF82-sK5S8qmlYuMYzltzXD5gZhc';
 var SHEET_ID_GRADS='1snqn4iBqhwiZ8xShTwCM0mI33vygADm4melcEmjEmuA';
 var SHEET_ID_ONBOARDING='1yF8d_WGxj4f4E12D5Wu32vTN0aCUHziLRHqdv7Ce62I';
+var SHEET_ID_PCO='1VPBv6RuwhFWjBWvOS2rVyDTzzrJCJqGOuEeYemwQKeI';
 var TAB_REPORTS='HC Team Form Output';
 var TAB_GRADS='HC Connect Data';
 var TAB_ONBOARDING='Onboarding Tracking Data';
+var TAB_CHECKINS='CheckIns_Attendance';
+var TAB_SCHEDULING='Services_Scheduling';
 
 // ── STATE ────────────────────────────────────────────────────────────────
 var G='month', OFF=0;
-var reportData=[], gradsData=[], onboardData=[];
-var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true};
-var loaded=0;
+var reportData=[], gradsData=[], onboardData=[], checkInData=[], schedData=[];
+var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true}, sSortState={key:'plan_date',asc:true};
+var loaded=0, pcoLoaded=0;
 var chartBreakdown=null, chartTrend=null, chartDonut=null;
 
-// ── PLANNING CENTER STATE ─────────────────────────────────────────────────
-// Data is fetched at deploy time by scripts/fetch-pco.js → pco-data.js
-var _pco=window._PCO_STATIC||{servicesByDate:{},checkInsByDate:{}};
-var pcoServicesByDate=_pco.servicesByDate;
-var pcoCheckInsByDate=_pco.checkInsByDate;
-var pcoReady=true;
-
-function pcoServicesHtml(dateKey){
-  var plans=pcoServicesByDate[dateKey];
-  if(!plans||!plans.length)return'<div style="font-size:12px;color:var(--g400);font-style:italic">No service plans found for this date.</div>';
-  var html='';
-  plans.forEach(function(plan){
-    html+='<div style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:6px">'+plan.serviceType+'</div>';
-    if(plan.people&&plan.people.length){
-      var confirmed=plan.people.filter(function(p){return p.status==='C';}).length;
-      var declined=plan.people.filter(function(p){return p.status==='D';}).length;
-      var unconf=plan.people.filter(function(p){return p.status==='U';}).length;
-      html+='<div style="font-size:11px;margin-bottom:8px">'
-        +'<span style="color:var(--green)">'+confirmed+' confirmed</span>'
-        +(unconf?' &middot; <span style="color:var(--amber)">'+unconf+' unconfirmed</span>':'')
-        +(declined?' &middot; <span style="color:var(--red)">'+declined+' declined</span>':'')
-        +'</div>';
-      var teams={};
-      plan.people.forEach(function(p){var t=p.team||'Other';if(!teams[t])teams[t]=[];teams[t].push(p);});
-      Object.keys(teams).sort().forEach(function(teamName){
-        html+='<div style="margin-bottom:10px">'
-          +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-bottom:4px">'+teamName+'</div>';
-        teams[teamName].forEach(function(m){
-          var color=m.status==='C'?'var(--green)':m.status==='D'?'var(--red)':'var(--amber)';
-          var icon=m.status==='C'?'✓':m.status==='D'?'✗':'?';
-          html+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:1px 0">'
-            +'<span style="color:'+color+';font-weight:700;width:10px;flex-shrink:0">'+icon+'</span>'
-            +'<span style="flex:1">'+m.name+'</span>'
-            +(m.position?'<span style="font-size:11px;color:var(--g400)">'+m.position+'</span>':'')
-            +'</div>';
-        });
-        html+='</div>';
-      });
-    } else {
-      html+='<div style="font-size:12px;color:var(--g400);font-style:italic;margin-bottom:8px">Scheduling data not available for this date.</div>';
-    }
-  });
-  return html;
-}
-
-function pcoPeriodCheckIns(start,end){
-  return Object.keys(pcoCheckInsByDate).reduce(function(sum,dt){
-    var d=parseDate(dt);return(d&&d>=start&&d<=end)?sum+pcoCheckInsByDate[dt].total:sum;
-  },0);
-}
 
 // ── CHART DEFAULTS ───────────────────────────────────────────────────────
 Chart.defaults.font.family="'Inter',sans-serif";
@@ -619,6 +602,8 @@ function parseDate(str){
   if(!str)return null;
   var m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if(m)return new Date(parseInt(m[3]),parseInt(m[1])-1,parseInt(m[2]));
+  var m2=str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m2)return new Date(parseInt(m2[1]),parseInt(m2[2])-1,parseInt(m2[3]));
   var d=new Date(str);return isNaN(d.getTime())?null:d;
 }
 var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -734,6 +719,22 @@ function mapOnboarding(o,i){
     progress:Math.round((completed/steps.length)*100),completedSteps:completed,totalSteps:steps.length};
 }
 
+function mapCheckIn(o,i){
+  return{id:i+1,event_name:o['event_name']||'',event_id:o['event_id']||'',period_id:o['period_id']||'',
+    starts_at:o['starts_at']||'',ends_at:o['ends_at']||'',
+    regular:toNum(o['regular_count']),guest:toNum(o['guest_count']),
+    volunteer:toNum(o['volunteer_count']),total:toNum(o['total_count'])};
+}
+function mapSched(o,i){
+  return{id:i+1,pp_id:o['pp_id']||'',service_type:o['service_type']||'',
+    plan_date:o['plan_date']||'',plan_dates:o['plan_dates']||'',
+    plan_title:o['plan_title']||'',series_title:o['series_title']||'',
+    plan_id:o['plan_id']||'',person_name:o['person_name']||'',status:o['status']||'',
+    team:o['team']||'',position:o['position']||'',responds_to:o['responds_to']||'',
+    decline_reason:o['decline_reason']||'',notes:o['notes']||'',
+    status_updated_at:o['status_updated_at']||''};
+}
+
 window.onload=function(){
   fetch(sheetURL(SHEET_ID_REPORTS,TAB_REPORTS)).then(function(r){return r.json();})
     .then(function(d){reportData=rowsToObjects(d.values).map(mapReport);onDataLoaded();}).catch(onErr);
@@ -741,12 +742,17 @@ window.onload=function(){
     .then(function(d){gradsData=rowsToObjects(d.values).map(mapGrad);onDataLoaded();}).catch(onErr);
   fetch(sheetURL(SHEET_ID_ONBOARDING,TAB_ONBOARDING)).then(function(r){return r.json();})
     .then(function(d){onboardData=rowsToObjects(d.values).map(mapOnboarding);onDataLoaded();}).catch(onErr);
+  fetch(sheetURL(SHEET_ID_PCO,TAB_CHECKINS)).then(function(r){return r.json();})
+    .then(function(d){checkInData=rowsToObjects(d.values).map(mapCheckIn);onPcoDataLoaded();})
+    .catch(function(){onPcoDataLoaded();});
+  fetch(sheetURL(SHEET_ID_PCO,TAB_SCHEDULING)).then(function(r){return r.json();})
+    .then(function(d){schedData=rowsToObjects(d.values).map(mapSched);onPcoDataLoaded();})
+    .catch(function(){onPcoDataLoaded();});
 };
 function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
   loaded++;
   if(loaded<3)return;
-  // All three datasets ready
   document.getElementById('r-loading').style.display='none';document.getElementById('r-table').style.display='';
   document.getElementById('g-loading').style.display='none';document.getElementById('g-table').style.display='';
   document.getElementById('o-loading').style.display='none';document.getElementById('o-table').style.display='';
@@ -757,11 +763,21 @@ function onDataLoaded(){
   fillSelect('o-team',uniq(onboardData,'team'));
   renderAll();
 }
+function onPcoDataLoaded(){
+  pcoLoaded++;
+  if(pcoLoaded<2)return;
+  document.getElementById('s-loading').style.display='none';
+  document.getElementById('s-table').style.display='';
+  fillSelect('s-team',uniq(schedData,'team'));
+  fillSelect('s-stype',[...new Set(schedData.map(function(d){return d.service_type;}).filter(Boolean))].sort());
+  if(loaded>=3)renderScheduling();
+}
 function renderAll(){
   renderPeriodLabel();
   renderGlance();
   applyReportFilters();
   renderOnboarding();
+  if(pcoLoaded>=2)renderScheduling();
 }
 
 // ── PERIOD NAVIGATION ────────────────────────────────────────────────────
@@ -803,14 +819,10 @@ function renderGlance(){
   setMetric('g-crd','g-crd-d',sum(cur,'connectCards'),sum(prev,'connectCards'));
   setMetric('g-su','g-su-d',sum(cur,'signUps'),sum(prev,'signUps'));
   setMetric('g-chk','g-chk-d',chkCur,chkPrv,function(v){return v+'%';});
-
-  // PCO check-ins sub-line on Total Served card
-  if(pcoReady){
-    var ciTotal=pcoPeriodCheckIns(b.start,b.end);
-    var ciEl=document.getElementById('g-ci-total');
-    if(ciEl&&ciTotal){ciEl.innerHTML='<span class="pc-badge">PC</span> Church check-ins: '+ciTotal.toLocaleString();ciEl.style.display='';}
-    else if(ciEl)ciEl.style.display='none';
-  }
+  var ciCur=filterCheckInByPeriod(checkInData,G,OFF);
+  var ciTotal=ciCur.reduce(function(a,r){return a+r.total;},0);
+  var ciEl=document.getElementById('g-ci-total');
+  if(ciEl)ciEl.textContent=ciTotal?'PCO Check-ins: '+ciTotal:'';
 
   // Team period label
   document.getElementById('team-period-lbl').textContent=b.label;
@@ -1006,6 +1018,30 @@ function showTeamDetail(teamName){
         +'</div>';
     }).join('');
   }
+  // Scheduling section from PCO data
+  var teamSched=filterSchedByPeriod(schedData,G,OFF).filter(function(r){return r.team===teamName;});
+  if(teamSched.length){
+    html+='<div class="d-sec">Scheduling This Period</div>';
+    var byDate={};
+    teamSched.forEach(function(r){if(!byDate[r.plan_date])byDate[r.plan_date]={date:r.plan_date,dates:r.plan_dates,conf:0,unci:0,decl:0,people:[]};var g=byDate[r.plan_date];if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;g.people.push(r);});
+    html+=Object.values(byDate).sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(g){
+      return'<div style="background:var(--g50);border-radius:var(--rs);padding:10px 12px;margin-bottom:7px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+        +'<span style="font-size:13px;font-weight:600;color:var(--g800)">'+(g.dates||g.date)+'</span>'
+        +'<span style="font-size:11px;color:var(--g400)">'
+        +'<span style="color:var(--green);font-weight:600">'+g.conf+'✓</span>'
+        +(g.unci?' &nbsp;<span style="color:var(--amber);font-weight:600">'+g.unci+'?</span>':'')
+        +(g.decl?' &nbsp;<span style="color:var(--red);font-weight:600">'+g.decl+'✗</span>':'')
+        +'</span></div>'
+        +g.people.map(function(p){
+          var sc=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
+          return'<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-top:1px solid var(--g200)">'
+            +'<span style="font-size:12px;color:var(--g700)">'+p.person_name+(p.position?' <span style="color:var(--g400)">· '+p.position+'</span>':'')+'</span>'
+            +'<span class="badge '+sc+'" style="font-size:10px">'+p.status+'</span></div>';
+        }).join('')
+        +'</div>';
+    }).join('');
+  }
   document.getElementById('d-content').innerHTML=html;
   openOv();
 }
@@ -1057,41 +1093,24 @@ function renderAttendance(data){
   setEl('a-sch',avg(data,'scheduled'));setEl('a-srv',avg(data,'served'));
   setEl('a-sat',avg(data,'satInService'));setEl('a-rly',avg(data,'attendedRally'));
   setEl('a-pry',avg(data,'wednesdayPrayer'));setEl('a-act',sum(data,'totalActive'));
-  if(pcoReady){
-    var b2=getPeriodBounds(G,OFF);
-    var ciDates=Object.keys(pcoCheckInsByDate).filter(function(dt){var d2=parseDate(dt);return d2&&d2>=b2.start&&d2<=b2.end;});
-    var ciSum=ciDates.reduce(function(s,dt){return s+pcoCheckInsByDate[dt].total;},0);
-    var ciCard=document.getElementById('a-pco-card');
-    if(ciCard){ciCard.style.display='';setEl('a-pco',ciDates.length?Math.round(ciSum/ciDates.length):'—');}
-  }
   var tbody=document.getElementById('a-body');tbody.innerHTML='';
   sortArr(data,'date',false).forEach(function(d){
-    var ciVal=pcoReady&&pcoCheckInsByDate[d.date]?pcoCheckInsByDate[d.date].total.toLocaleString():'—';
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'
-      +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td><td class="hide-sm">'+d.wednesdayPrayer+'</td>'
-      +'<td class="hide-sm">'+ciVal+'</td>';
+      +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td><td class="hide-sm">'+d.wednesdayPrayer+'</td>';
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
   });
 }
 function renderGuests(data){
   setEl('gg-gst',sum(data,'firstTimeGuests'));setEl('gg-cin',sum(data,'connectCards'));
   setEl('gg-cpc',sum(data,'connectEntered'));setEl('gg-su',sum(data,'signUps'));setEl('gg-ls',sum(data,'liveStream'));
-  if(pcoReady){
-    var b3=getPeriodBounds(G,OFF);
-    var ciTotal2=pcoPeriodCheckIns(b3.start,b3.end);
-    var ggCard=document.getElementById('gg-pco-card');
-    if(ggCard){ggCard.style.display='';setEl('gg-pco',ciTotal2?ciTotal2.toLocaleString():'—');}
-  }
   var tbody=document.getElementById('gg-body');tbody.innerHTML='';
   sortArr(data,'date',false).forEach(function(d){
-    var ciVal2=pcoReady&&pcoCheckInsByDate[d.date]?pcoCheckInsByDate[d.date].total.toLocaleString():'—';
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.firstTimeGuests+'</td><td>'+d.connectCards+'</td><td>'+d.connectEntered+'</td>'
-      +'<td class="hide-sm">'+d.signUps+'</td><td class="hide-sm">'+d.liveStream+'</td>'
-      +'<td class="hide-sm">'+ciVal2+'</td>';
+      +'<td class="hide-sm">'+d.signUps+'</td><td class="hide-sm">'+d.liveStream+'</td>';
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
   });
 }
@@ -1234,7 +1253,6 @@ function openReportDetail(d){
       +(hasContent(d.incidents)?tblock('Incident',d.incidents):'')+(hasContent(d.actionSteps)?tblock('Action Steps',d.actionSteps):'')
       +(hasContent(d.techIssues)?tblock('Tech Issues',d.techIssues):'')+(hasContent(d.buildingRepairs)?tblock('Building Repairs',d.buildingRepairs):'')
       +(hasContent(d.maintenanceDone)?tblock('Maintenance Done',d.maintenanceDone):''):'')
-    +'<div class="d-sec">Planning Center Services<span class="pc-badge" style="margin-left:6px">PC</span></div><div style="margin-bottom:10px">'+pcoServicesHtml(d.date)+'</div>'
     +'<div style="margin-top:10px;font-size:11px;color:var(--g300)">Submitted: '+d.timestamp+'</div>';
   openOv();
 }
@@ -1279,16 +1297,66 @@ function openGradDetail(d,linked){
   openOv();
 }
 
+// ── SCHEDULING ────────────────────────────────────────────────────────────
+function filterSchedByPeriod(data,gran,off){
+  var b=getPeriodBounds(gran,off);
+  return data.filter(function(r){var d=parseDate(r.plan_date);return d&&d>=b.start&&d<=b.end;});
+}
+function filterCheckInByPeriod(data,gran,off){
+  var b=getPeriodBounds(gran,off);
+  return data.filter(function(r){if(!r.starts_at)return false;var d=new Date(r.starts_at);return!isNaN(d)&&d>=b.start&&d<=b.end;});
+}
+function renderScheduling(){
+  var ci=filterCheckInByPeriod(checkInData,G,OFF);
+  var sc=filterSchedByPeriod(schedData,G,OFF);
+  setEl('s-conf',sc.filter(function(r){return r.status==='Confirmed';}).length);
+  setEl('s-unci',sc.filter(function(r){return r.status==='Unconfirmed';}).length);
+  setEl('s-decl',sc.filter(function(r){return r.status==='Declined';}).length);
+  setEl('s-ci',ci.reduce(function(a,r){return a+r.total;},0));
+  applySchedFilters();
+}
+function applySchedFilters(){
+  var q=(document.getElementById('s-search')||{}).value||'';q=q.toLowerCase();
+  var tm=(document.getElementById('s-team')||{}).value||'';
+  var st=(document.getElementById('s-stype')||{}).value||'';
+  var ss=(document.getElementById('s-status')||{}).value||'';
+  var base=filterSchedByPeriod(schedData,G,OFF);
+  var f=base.filter(function(r){
+    return(!q||r.person_name.toLowerCase().includes(q)||r.team.toLowerCase().includes(q))
+      &&(!tm||r.team===tm)&&(!st||r.service_type===st)&&(!ss||r.status===ss);
+  });
+  renderSchedTable(f);
+}
+function renderSchedTable(data){
+  var sorted=sortArr(data,sSortState.key,sSortState.asc);
+  var tbody=document.getElementById('s-body');if(!tbody)return;
+  tbody.innerHTML='';
+  document.getElementById('s-empty').style.display=sorted.length?'none':'block';
+  sorted.forEach(function(d){
+    var scls=d.status==='Confirmed'?'by':d.status==='Declined'?'bn':'bf';
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+d.plan_date+'</td>'
+      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+d.service_type+'</td>'
+      +'<td style="font-weight:600">'+d.team+'</td>'
+      +'<td>'+d.person_name+'</td>'
+      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+d.position+'</td>'
+      +'<td><span class="badge '+scls+'">'+d.status+'</span></td>';
+    tbody.appendChild(tr);
+  });
+}
+function sSort(key){sSortState.asc=sSortState.key===key?!sSortState.asc:true;sSortState.key=key;applySchedFilters();}
+
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function switchSection(name){
   document.querySelectorAll('.nav-tab').forEach(function(b,i){
-    b.classList.toggle('active',['glance','reports','onboarding'][i]===name);
+    b.classList.toggle('active',['glance','reports','onboarding','scheduling'][i]===name);
   });
   document.querySelectorAll('.sec').forEach(function(p){
     p.classList.toggle('active',p.id==='sec-'+name);
   });
   document.getElementById('period-bar').style.display=name==='onboarding'?'none':'';
   if(name==='reports')applyReportFilters();
+  if(name==='scheduling'&&pcoLoaded>=2)renderScheduling();
 }
 function switchTab(prefix,name){
   var ids=prefix==='r'?['overview','attendance','guests','flags']:['pipeline','tracker','grads'];

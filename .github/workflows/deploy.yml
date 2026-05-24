@@ -4,9 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    # Refresh PCO data every Monday at 6am UTC (Sunday night US time)
-    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
@@ -25,12 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Fetch Planning Center data
-        env:
-          PCO_APP_ID: ${{ secrets.PCO_APP_ID }}
-          PCO_SECRET: ${{ secrets.PCO_SECRET }}
-        run: node scripts/fetch-pco.js
 
       - uses: actions/configure-pages@v4
 
