@@ -1106,11 +1106,24 @@ function renderPcAttendance(){
     var el=document.getElementById(id);if(!el)return;
     var cur=el.value;
     el.innerHTML='<option value="">'+(id==='pc-fteam'?'All teams':'All dates')+'</option>';
-    vals.forEach(function(v){var x=document.createElement('option');x.value=v;x.textContent=v;el.appendChild(x);});
-    if(vals.indexOf(cur)!==-1)el.value=cur;
+    vals.forEach(function(v){
+      var x=document.createElement('option');
+      x.value=typeof v==='object'?v.value:v;
+      x.textContent=typeof v==='object'?v.label:v;
+      el.appendChild(x);
+    });
+    var rawVals=vals.map(function(v){return typeof v==='object'?v.value:v;});
+    if(rawVals.indexOf(cur)!==-1)el.value=cur;
   }
   repopulate('pc-fteam',[...new Set(base.map(function(r){return r.team;}).filter(Boolean))].sort());
-  repopulate('pc-fdate',[...new Set(base.map(function(r){return r.plan_date;}).filter(Boolean))].sort());
+  var dateOpts=[...new Set(base.map(function(r){return r.plan_date;}).filter(Boolean))]
+    .sort().reverse()
+    .map(function(d){
+      var dt=parseDate(d);
+      var label=dt?MO[dt.getMonth()]+' '+dt.getDate()+', '+dt.getFullYear():d;
+      return{value:d,label:label};
+    });
+  repopulate('pc-fdate',dateOpts);
   applyPcAttFilters(base);
 }
 function applyPcAttFilters(base){
