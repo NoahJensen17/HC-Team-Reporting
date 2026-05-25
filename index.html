@@ -1188,70 +1188,81 @@ function openPcAttDetail(g){
       return ao-bo||a.person_name.localeCompare(b.person_name);
     });
   }
+  function isYH(p){return p.position&&/youth\s*helper/i.test(p.position);}
   function personRow(p,hidePos){
     var scls=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
-    return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">'
-      +'<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>'
-      +(!hidePos&&p.position?'<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>':'')
-      +(p.decline_reason?'<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>':'')
-      +'</div><span class="badge '+scls+'">'+p.status+'</span></div>';
+    var yh=isYH(p);
+    var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">';
+    html+='<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>';
+    if(!hidePos&&p.position&&!yh)html+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
+    if(yh)html+='<div style="font-size:11px;color:var(--purple);font-style:italic">Youth Helper</div>';
+    if(p.decline_reason)html+='<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>';
+    html+='</div><span class="badge '+scls+'">'+p.status+'</span></div>';
+    return html;
   }
   function section(label,color,people){
     if(!people.length)return'';
-    return'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';margin:12px 0 6px">'+label+' ('+people.length+')</div>'
-      +people.map(function(p){return personRow(p,false);}).join('');
+    return'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';margin:12px 0 6px">'+label+' ('+people.length+')</div>'+people.map(function(p){return personRow(p,false);}).join('');
   }
-
-  var html='<div class="d-title">'+g.team+'</div>'
-    +'<div class="d-sub">'+(g.dates||g.date)+'</div>'
-    +'<div class="d-sec">Volunteer Breakdown</div>'
-    +'<div class="stat-grid" style="margin-bottom:12px">'
-    +stat('Scheduled',g.total)+stat('Confirmed',g.conf)+stat('Unconfirmed',g.unci)+stat('Declined',g.decl)
-    +stat('Confirm Rate',g.total?Math.round(g.conf/g.total*100)+'%':'—')
-    +'</div>';
-
+  function statC(label,val,color){
+    return'<div class="stat-item"><label>'+label+'</label><span style="color:'+color+'">'+val+'</span></div>';
+  }
+  var html='<div class="d-title">'+g.team+'</div>';
+  html+='<div class="d-sub">'+(g.dates||g.date)+'</div>';
+  html+='<div class="d-sec">Volunteer Breakdown</div>';
+  html+='<div class="stat-grid" style="margin-bottom:12px">';
+  html+=stat('Scheduled',g.total);
+  html+=statC('Confirmed',g.conf,'var(--green)');
+  html+=statC('Unconfirmed',g.unci,'var(--amber)');
+  html+=statC('Declined',g.decl,'var(--red)');
+  html+=statC('Confirm Rate',g.total?Math.round(g.conf/g.total*100)+'%':'—','var(--blue2)');
+  html+='</div>';
   if(g.team==='Hope City Kids'){
-    // Group by position/subteam
-    var byPos={};
+    var byPos={};var youthPeople=[];
     g.people.forEach(function(p){
+      if(isYH(p)){youthPeople.push(p);return;}
       var pos=p.position||'Unassigned';
       if(!byPos[pos])byPos[pos]=[];
       byPos[pos].push(p);
     });
     var posNames=Object.keys(byPos).sort();
     html+='<div class="d-sec" style="margin-top:4px">By Subteam</div>';
-    html+=posNames.map(function(pos,idx){
+    posNames.forEach(function(pos,idx){
       var people=sortPeople(byPos[pos]);
       var pc=people.filter(function(p){return p.status==='Confirmed';}).length;
       var pu=people.filter(function(p){return p.status==='Unconfirmed';}).length;
       var pd=people.filter(function(p){return p.status==='Declined';}).length;
       var bodyId='pca-sub-'+idx;
-      return'<div style="margin-bottom:6px">'
-        +'<div onclick="togglePcaSub(\''+ bodyId +'\')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:var(--rs);background:var(--g100);cursor:pointer;user-select:none">'
-        +'<span style="display:flex;align-items:center;gap:6px">'
-        +'<span id="'+bodyId+'-arrow" style="font-size:10px;color:var(--g400)">&#9660;</span>'
-        +'<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span>'
-        +'</span>'
-        +'<span style="display:flex;gap:10px;font-size:12px;font-weight:600">'
-        +(pc?'<span style="color:var(--green)">&#10003; '+pc+'</span>':'')
-        +(pu?'<span style="color:var(--amber)">? '+pu+'</span>':'')
-        +(pd?'<span style="color:var(--red)">&#10007; '+pd+'</span>':'')
-        +'</span></div>'
-        +'<div id="'+bodyId+'" style="margin-top:4px;margin-bottom:8px">'
-        +people.map(function(p){return personRow(p,true);}).join('')
-        +'</div>'
-        +'</div>';
-    }).join('');
+      html+='<div style="margin-bottom:6px">';
+      html+='<div onclick="togglePcaSub(\''+bodyId+'\')'+'" style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:var(--rs);background:var(--g100);cursor:pointer;user-select:none">';
+      html+='<span style="display:flex;align-items:center;gap:6px">';
+      html+='<span id="'+bodyId+'-arrow" style="font-size:10px;color:var(--g400)">&#9660;</span>';
+      html+='<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span>';
+      html+='</span>';
+      html+='<span style="display:flex;gap:10px;font-size:12px;font-weight:600">';
+      html+=(pc?'<span style="color:var(--green)">&#10003; '+pc+'</span>':'');
+      html+=(pu?'<span style="color:var(--amber)">? '+pu+'</span>':'');
+      html+=(pd?'<span style="color:var(--red)">&#10007; '+pd+'</span>':'');
+      html+='</span></div>';
+      html+='<div id="'+bodyId+'" style="margin-top:4px;margin-bottom:8px">';
+      html+=people.map(function(p){return personRow(p,true);}).join('');
+      html+='</div></div>';
+    });
+    if(youthPeople.length){
+      html+='<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--g100)">';
+      html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--purple);margin-bottom:6px">Youth Helpers ('+youthPeople.length+')</div>';
+      html+=sortPeople(youthPeople).map(function(p){return personRow(p,false);}).join('');
+      html+='</div>';
+    }
   } else {
     var sorted=sortPeople(g.people);
     var conf=sorted.filter(function(p){return p.status==='Confirmed';});
     var unci=sorted.filter(function(p){return p.status==='Unconfirmed';});
     var decl=sorted.filter(function(p){return p.status==='Declined';});
-    html+=section('Confirmed','var(--green)',conf)
-      +section('Unconfirmed','var(--amber)',unci)
-      +section('Declined','var(--red)',decl);
+    html+=section('Confirmed','var(--green)',conf);
+    html+=section('Unconfirmed','var(--amber)',unci);
+    html+=section('Declined','var(--red)',decl);
   }
-
   document.getElementById('d-content').innerHTML=html;
   openOv();
 }
