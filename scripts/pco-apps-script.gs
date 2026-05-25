@@ -175,6 +175,93 @@ function fixSchedulingHistoryShift() {
   Logger.log('fixSchedulingHistoryShift: corrected ' + fixed + ' shifted rows.');
 }
 
+// Removes duplicate rows from Services_Scheduling.
+//
+// Two rows are duplicates when they share the same plan_id + person_name +
+// team + position (the four fields that uniquely identify a single PCO
+// plan_people assignment). Status is intentionally excluded so that a
+// historical "Unconfirmed" row is still treated as a duplicate of a current
+// "Confirmed" row for the same assignment.
+//
+// When duplicates are found, the row with a numeric pp_id is kept (current
+// sync data). If both rows have numeric pp_ids, the first one in the sheet
+// is kept. Rows with no plan_id or person_name are left untouched.
+//
+// Rewrites the entire sheet in one call — much faster than row-by-row
+// deletion for 40k+ rows.
+function deduplicateServicesScheduling() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Services_Scheduling');
+  if (!sh) { Logger.log('Services_Scheduling tab not found.'); return; }
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const col     = {};
+  headers.forEach((h, i) => col[h.toString().trim()] = i);
+
+  const ci   = col['pp_id'];
+  const cp   = col['plan_id'];
+  const cn   = col['person_name'];
+  const ct   = col['team'];
+  const cpos = col['position'];
+
+  if ([ci, cp, cn, ct, cpos].some(x => x === undefined)) {
+    Logger.log('Missing required column. Headers found: ' + headers.join(', '));
+    return;
+  }
+
+  // First pass: for each composite key find the index of the "best" row.
+  // Best = has a numeric pp_id; ties keep the first occurrence.
+  const best = {}; // key → data-array index of best row
+
+  for (let i = 1; i < data.length; i++) {
+    const row        = data[i];
+    const planId     = (row[cp]   || '').toString().trim();
+    const personName = (row[cn]   || '').toString().trim();
+    if (!planId || !personName) continue;          // skip blank / header-only rows
+
+    const key    = [planId, personName, (row[ct] || '').toString().trim(),
+                    (row[cpos] || '').toString().trim()].join('|');
+    const ppId   = (row[ci] || '').toString().trim();
+    const hasNum = /^\d+$/.test(ppId);
+
+    if (best[key] === undefined) {
+      best[key] = i;
+    } else {
+      const prevPp     = (data[best[key]][ci] || '').toString().trim();
+      const prevHasNum = /^\d+$/.test(prevPp);
+      if (!prevHasNum && hasNum) best[key] = i; // upgrade to numeric pp_id row
+      // else keep the existing best row
+    }
+  }
+
+  // Second pass: build the output keeping only best-row indices (plus rows
+  // with no plan_id/person_name which are left as-is).
+  const keepIdx = new Set(Object.values(best));
+  const kept    = [headers];
+  let   removed = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const row        = data[i];
+    const planId     = (row[cp] || '').toString().trim();
+    const personName = (row[cn] || '').toString().trim();
+    if (!planId || !personName) { kept.push(row); continue; }
+    if (keepIdx.has(i)) { kept.push(row); } else { removed++; }
+  }
+
+  if (removed === 0) {
+    Logger.log('deduplicateServicesScheduling: no duplicates found.');
+    return;
+  }
+
+  Logger.log('Removing ' + removed + ' duplicate rows — rewriting sheet with '
+    + (kept.length - 1) + ' data rows...');
+  sh.clearContents();
+  sh.getRange(1, 1, kept.length, headers.length).setValues(kept);
+  sh.setFrozenRows(1);
+  Logger.log('deduplicateServicesScheduling: done. Removed ' + removed + ' duplicates.');
+}
+
 // ─── Reset helpers ────────────────────────────────────────────────────────────
 
 function resetTabHeaders(tabName) {
