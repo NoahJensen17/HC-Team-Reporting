@@ -250,7 +250,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchSection('glance')">Month at a Glance</button>
-    <button class="nav-tab" onclick="switchSection('reports')">Sunday Reports</button>
+    <button class="nav-tab" onclick="switchSection('reports')">Team Reporting</button>
     <button class="nav-tab" onclick="switchSection('onboarding')">Onboarding</button>
     <button class="nav-tab" onclick="switchSection('scheduling')">Scheduling</button>
   </div>
@@ -315,49 +315,18 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 </div>
 </div>
 
-<!-- SECTION: Sunday Reports -->
+<!-- SECTION: Team Reporting -->
 <div class="sec" id="sec-reports">
 <div class="page">
   <div class="tabs-nav">
-    <button class="tab-btn active" data-rtab="overview" onclick="switchTab('r','overview')">Overview</button>
-    <button class="tab-btn" data-rtab="attendance" onclick="switchTab('r','attendance')">Attendance &amp; Team</button>
+    <button class="tab-btn active" data-rtab="attendance" onclick="switchTab('r','attendance')">Reported Attendance</button>
+    <button class="tab-btn" data-rtab="pcattendance" onclick="switchTab('r','pcattendance')">PC Attendance</button>
     <button class="tab-btn" data-rtab="guests" onclick="switchTab('r','guests')">Guests &amp; Engagement</button>
     <button class="tab-btn" data-rtab="flags" onclick="switchTab('r','flags')">Flags &amp; Follow-ups</button>
   </div>
 
-  <!-- Overview -->
-  <div class="tab-panel active" id="r-overview">
-    <div class="metrics">
-      <div class="mcard"><div class="mc-lbl">Total Reports</div><div class="mc-val cb" id="m-total">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Total Served</div><div class="mc-val cg" id="m-served">—</div></div>
-      <div class="mcard"><div class="mc-lbl">First-Time Guests</div><div class="mc-val cp" id="m-guests">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Connect Cards</div><div class="mc-val cb" id="m-cards">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Sign-Ups</div><div class="mc-val cg" id="m-signups">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Checklist Rate</div><div class="mc-val ca" id="m-checklist">—</div></div>
-    </div>
-    <div class="tbl-card">
-      <div class="tbl-toolbar">
-        <div class="srch"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="r-search" placeholder="Name or team…" oninput="applyReportFilters()"></div>
-        <select class="fsel" id="r-team" onchange="applyReportFilters()"><option value="">All teams</option></select>
-        <select class="fsel" id="r-date" onchange="applyReportFilters()"><option value="">All dates</option></select>
-      </div>
-      <div class="loading" id="r-loading"><div class="lds"></div><br>Loading…</div>
-      <table id="r-table" style="display:none"><thead><tr>
-        <th onclick="rSort('date')">Date</th>
-        <th onclick="rSort('team')">Team</th>
-        <th onclick="rSort('name')" class="hide-sm">Submitted By</th>
-        <th onclick="rSort('served')">Served</th>
-        <th onclick="rSort('firstTimeGuests')" class="hide-sm">Guests</th>
-        <th onclick="rSort('connectCards')" class="hide-sm">Cards</th>
-        <th onclick="rSort('checklistDone')">Checklist</th>
-        <th class="hide-sm">Flags</th>
-      </tr></thead><tbody id="r-body"></tbody></table>
-      <div class="empty" id="r-empty" style="display:none">No reports match filters.</div>
-    </div>
-  </div>
-
-  <!-- Attendance -->
-  <div class="tab-panel" id="r-attendance">
+  <!-- Reported Attendance -->
+  <div class="tab-panel active" id="r-attendance">
     <div class="metrics">
       <div class="mcard"><div class="mc-lbl">Avg Scheduled</div><div class="mc-val cb" id="a-sch">—</div></div>
       <div class="mcard"><div class="mc-lbl">Avg Served</div><div class="mc-val cg" id="a-srv">—</div></div>
@@ -371,6 +340,23 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <th>Sat in Service</th><th class="hide-sm">Rally</th>
       <th class="hide-sm">Min Leaders</th><th class="hide-sm">Wed Prayer</th>
     </tr></thead><tbody id="a-body"></tbody></table></div>
+  </div>
+
+  <!-- PC Attendance -->
+  <div class="tab-panel" id="r-pcattendance">
+    <div class="metrics">
+      <div class="mcard"><div class="mc-lbl">Total Scheduled</div><div class="mc-val cb" id="pc-total">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Confirmed</div><div class="mc-val cg" id="pc-conf">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Unconfirmed</div><div class="mc-val ca" id="pc-unci">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Declined</div><div class="mc-val cr" id="pc-decl">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Confirm Rate</div><div class="mc-val cb" id="pc-rate">—</div></div>
+    </div>
+    <div class="tbl-card"><table><thead><tr>
+      <th>Date</th><th>Team</th><th>Scheduled</th>
+      <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
+    </tr></thead><tbody id="pc-body"></tbody></table>
+    <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
+    </div>
   </div>
 
   <!-- Guests -->
@@ -753,11 +739,8 @@ function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
   loaded++;
   if(loaded<3)return;
-  document.getElementById('r-loading').style.display='none';document.getElementById('r-table').style.display='';
   document.getElementById('g-loading').style.display='none';document.getElementById('g-table').style.display='';
   document.getElementById('o-loading').style.display='none';document.getElementById('o-table').style.display='';
-  fillSelect('r-team',uniq(reportData,'team'));
-  fillSelect('r-date',uniq(reportData,'date').reverse());
   var gt=[];gradsData.forEach(function(d){if(d.teams)d.teams.split(',').forEach(function(t){var tr=t.trim();if(tr&&!gt.includes(tr))gt.push(tr);});});
   fillSelect('g-team',gt.sort());
   fillSelect('o-team',uniq(onboardData,'team'));
@@ -1048,19 +1031,12 @@ function showTeamDetail(teamName){
 
 // ── REPORTS ───────────────────────────────────────────────────────────────
 function renderReports(data){
-  renderRMetrics(data);renderRTable(data);
   renderAttendance(data);renderGuests(data);renderRFlags(data);
+  renderPcAttendance();
 }
 function applyReportFilters(){
-  var q=document.getElementById('r-search').value.toLowerCase();
-  var tm=document.getElementById('r-team').value;
-  var dt=document.getElementById('r-date').value;
   var base=filterByPeriod(reportData,G,OFF);
-  var f=base.filter(function(d){
-    return(!q||d.name.toLowerCase().includes(q)||d.team.toLowerCase().includes(q))
-      &&(!tm||d.team===tm)&&(!dt||d.date===dt);
-  });
-  renderReports(f);
+  renderReports(base);
 }
 function renderRMetrics(data){
   var chk=data.filter(function(d){return/yes/i.test(d.checklistDone);}).length;
@@ -1100,6 +1076,39 @@ function renderAttendance(data){
       +'<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'
       +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td><td class="hide-sm">'+d.wednesdayPrayer+'</td>';
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
+  });
+}
+function renderPcAttendance(){
+  var sc=filterSchedByPeriod(schedData,G,OFF);
+  var total=sc.length;
+  var conf=sc.filter(function(r){return r.status==='Confirmed';}).length;
+  var unci=sc.filter(function(r){return r.status==='Unconfirmed';}).length;
+  var decl=sc.filter(function(r){return r.status==='Declined';}).length;
+  setEl('pc-total',total||'—');
+  setEl('pc-conf',conf||'—');
+  setEl('pc-unci',unci||'—');
+  setEl('pc-decl',decl||'—');
+  setEl('pc-rate',total?Math.round(conf/total*100)+'%':'—');
+  var groups={};
+  sc.forEach(function(r){
+    var key=r.plan_date+'|'+r.team;
+    if(!groups[key])groups[key]={date:r.plan_date,team:r.team,total:0,conf:0,unci:0,decl:0};
+    var g=groups[key];g.total++;
+    if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
+  });
+  var rows=Object.values(groups).sort(function(a,b){return a.date.localeCompare(b.date)||a.team.localeCompare(b.team);});
+  var tbody=document.getElementById('pc-body');if(!tbody)return;
+  tbody.innerHTML='';
+  var emEl=document.getElementById('pc-empty');if(emEl)emEl.style.display=rows.length?'none':'block';
+  rows.forEach(function(g){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+g.date+'</td>'
+      +'<td style="font-weight:600">'+g.team+'</td>'
+      +'<td>'+g.total+'</td>'
+      +'<td style="color:var(--green);font-weight:600">'+g.conf+'</td>'
+      +'<td style="color:var(--amber)">'+g.unci+'</td>'
+      +'<td style="color:var(--red)">'+g.decl+'</td>';
+    tbody.appendChild(tr);
   });
 }
 function renderGuests(data){
@@ -1359,7 +1368,7 @@ function switchSection(name){
   if(name==='scheduling'&&pcoLoaded>=2)renderScheduling();
 }
 function switchTab(prefix,name){
-  var ids=prefix==='r'?['overview','attendance','guests','flags']:['pipeline','tracker','grads'];
+  var ids=prefix==='r'?['attendance','pcattendance','guests','flags']:['pipeline','tracker','grads'];
   ids.forEach(function(id){
     var panel=document.getElementById(prefix+'-'+id);
     var btn=document.querySelector('[data-'+prefix+'tab="'+id+'"]');
