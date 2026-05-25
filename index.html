@@ -1120,7 +1120,7 @@ function renderPcAttendance(){
     .sort().reverse()
     .map(function(d){
       var dt=parseDate(d);
-      var label=dt?MO[dt.getMonth()]+' '+dt.getDate()+', '+dt.getFullYear():d;
+      var label=dt?(dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear():d;
       return{value:d,label:label};
     });
   repopulate('pc-fdate',dateOpts);
@@ -1169,7 +1169,7 @@ function applyPcAttFilters(base){
   var emEl=document.getElementById('pc-empty');if(emEl)emEl.style.display=rows.length?'none':'block';
   rows.forEach(function(g){
     var tr=document.createElement('tr');tr.className='dr';
-    var gdt=parseDate(g.date);var gdLabel=gdt?MO[gdt.getMonth()]+' '+gdt.getDate()+', '+gdt.getFullYear():g.date;
+    var gdt=parseDate(g.date);var gdLabel=gdt?(gdt.getMonth()+1)+'/'+gdt.getDate()+'/'+gdt.getFullYear():g.date;
     tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+gdLabel+'</td>'
       +'<td style="font-weight:600">'+g.team+'</td>'
       +'<td>'+g.total+'</td>'
