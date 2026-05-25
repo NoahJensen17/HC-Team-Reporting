@@ -357,7 +357,9 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
         <select class="fsel" id="pc-fdate" onchange="applyPcAttFilters()"><option value="">All dates</option></select>
       </div>
       <table><thead><tr>
-        <th>Date</th><th>Team</th><th>Scheduled</th>
+        <th id="pca-th-date" onclick="pcaSort('date')">Date</th>
+        <th id="pca-th-team" onclick="pcaSort('team')">Team</th>
+        <th id="pca-th-total" onclick="pcaSort('total')">Scheduled</th>
         <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
       </tr></thead><tbody id="pc-body"></tbody></table>
       <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
@@ -523,6 +525,7 @@ var TAB_SCHEDULING='Services_Scheduling';
 var G='month', OFF=0;
 var reportData=[], gradsData=[], onboardData=[], checkInData=[], schedData=[];
 var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true}, sSortState={key:'plan_date',asc:true};
+var pcaSortState={key:'date',asc:false};
 var loaded=0, pcoLoaded=0;
 var chartBreakdown=null, chartTrend=null, chartDonut=null;
 
@@ -1128,7 +1131,25 @@ function applyPcAttFilters(base){
     var g=groups[key];g.total++;g.people.push(r);
     if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
   });
-  var rows=Object.values(groups).sort(function(a,b){return a.date.localeCompare(b.date)||a.team.localeCompare(b.team);});
+  var rows=Object.values(groups).sort(function(a,b){
+    var k=pcaSortState.key,asc=pcaSortState.asc;
+    var av=a[k],bv=b[k];
+    var cmp=typeof av==='number'?(av-bv):String(av).localeCompare(String(bv));
+    if(!asc)cmp=-cmp;
+    if(cmp!==0)return cmp;
+    // Tiebreakers: team asc, then date desc
+    var tc=k!=='team'?a.team.localeCompare(b.team):0;
+    if(tc!==0)return tc;
+    return k!=='date'?b.date.localeCompare(a.date):0;
+  });
+  // Update header indicators
+  var pcaLabels={date:'Date',team:'Team',total:'Scheduled'};
+  Object.keys(pcaLabels).forEach(function(k){
+    var el=document.getElementById('pca-th-'+k);if(!el)return;
+    var active=pcaSortState.key===k;
+    el.textContent=pcaLabels[k]+(active?(pcaSortState.asc?' ↑':' ↓'):'');
+    el.style.color=active?'var(--blue2)':'';
+  });
   var tbody=document.getElementById('pc-body');if(!tbody)return;
   tbody.innerHTML='';
   var emEl=document.getElementById('pc-empty');if(emEl)emEl.style.display=rows.length?'none':'block';
@@ -1179,6 +1200,11 @@ function openPcAttDetail(g){
     +section('Declined','var(--red)',decl);
   document.getElementById('d-content').innerHTML=html;
   openOv();
+}
+function pcaSort(key){
+  if(pcaSortState.key===key){pcaSortState.asc=!pcaSortState.asc;}
+  else{pcaSortState.key=key;pcaSortState.asc=(key==='team');}
+  applyPcAttFilters();
 }
 function renderGuests(data){
   setEl('gg-gst',sum(data,'firstTimeGuests'));setEl('gg-cin',sum(data,'connectCards'));
