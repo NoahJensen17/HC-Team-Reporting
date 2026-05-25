@@ -73,16 +73,32 @@ function pcoCheckInsHistoryRun() {
     return;
   }
 
-  // First run: create/clear the sheet and set the starting URL.
+  // Phase 1: build event cache (event_id → name). Small — only ~10-15 events.
+  if (!progress.eventCache) {
+    Logger.log('Building event cache...');
+    progress.eventCache = buildCiEventCache_(auth);
+    saveCiProgress_(props, progress);
+    Logger.log('Cached ' + Object.keys(progress.eventCache).length + ' events.');
+  }
+
+  // Phase 2: build period cache (period_id → {event_id, starts_at}).
+  // Iterate all events → their periods. Typically a few hundred periods total.
+  if (!progress.periodCache) {
+    Logger.log('Building period cache...');
+    progress.periodCache = buildCiPeriodCache_(auth, progress.eventCache);
+    saveCiProgress_(props, progress);
+    Logger.log('Cached ' + Object.keys(progress.periodCache).length + ' periods.');
+  }
+
+  // Phase 3: set up sheet and starting URL on first run.
   if (!progress.nextUrl) {
     if (!sh) sh = ss.insertSheet(CI_TAB_NAME);
     sh.clear();
     sh.getRange(1, 1, 1, CI_HEADERS.length).setValues([CI_HEADERS]);
     sh.setFrozenRows(1);
-    // include=person gets first/last name; event_period gets service date;
-    // event gets event name. order=created_at gives consistent pagination.
+    // Only include=person to keep payloads small; event/period data comes from caches.
     progress.nextUrl     = PCO_HOST + '/check-ins/v2/check_ins'
-      + '?per_page=100&include=person,event_period,event&order=created_at';
+      + '?per_page=100&include=person&order=created_at';
     progress.rowsWritten = 0;
     saveCiProgress_(props, progress);
     Logger.log('Sheet created. Starting paginated fetch...');
@@ -101,21 +117,14 @@ function pcoCheckInsHistoryRun() {
 
     const resp = pcoGetHistory(progress.nextUrl, auth);
 
-    // Build in-memory lookups from the included array for this page.
-    const personMap  = {};   // person_id  → {first, last}
-    const periodMap  = {};   // period_id  → starts_at
-    const eventMap   = {};   // event_id   → name
-
+    // Build person lookup from included array (only Person records now).
+    const personMap = {};
     for (const inc of (resp.included || [])) {
       if (inc.type === 'Person') {
         personMap[inc.id] = {
           first: inc.attributes.first_name || '',
           last:  inc.attributes.last_name  || '',
         };
-      } else if (inc.type === 'EventPeriod') {
-        periodMap[inc.id] = inc.attributes.starts_at || '';
-      } else if (inc.type === 'Event') {
-        eventMap[inc.id] = inc.attributes.name || '';
       }
     }
 
@@ -127,16 +136,16 @@ function pcoCheckInsHistoryRun() {
       const periodId = rel.event_period && rel.event_period.data ? rel.event_period.data.id : null;
       const eventId  = rel.event        && rel.event.data        ? rel.event.data.id        : null;
 
-      const person     = (personId && personMap[personId]) || null;
-      const startsAt   = (periodId && periodMap[periodId]) || '';
-      const eventName  = (eventId  && eventMap[eventId])   || '';
+      const person    = (personId && personMap[personId]) || null;
+      const period    = (periodId && progress.periodCache[periodId]) || {};
+      const eventName = (eventId  && progress.eventCache[eventId])   || '';
 
       batch.push([
         ci.id,
         eventName,
         eventId  || '',
         periodId || '',
-        startsAt,
+        period.starts_at || '',
         person ? person.first : (a.first_name || ''),
         person ? person.last  : (a.last_name  || ''),
         a.kind                           || '',
@@ -181,6 +190,36 @@ function deleteCiTrigger_() {
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === 'pcoCheckInsHistoryRun')
     .forEach(t => ScriptApp.deleteTrigger(t));
+}
+
+// ─── Cache builders ───────────────────────────────────────────────────────────
+
+function buildCiEventCache_(auth) {
+  const cache = {};
+  let path = '/check-ins/v2/events?per_page=100';
+  while (path) {
+    const r = pcoGetHistory(PCO_HOST + path, auth);
+    for (const ev of (r.data || [])) cache[ev.id] = ev.attributes.name || ev.id;
+    const next = r.links && r.links.next;
+    path = next ? next.replace(PCO_HOST, '') : null;
+  }
+  return cache;
+}
+
+function buildCiPeriodCache_(auth, eventCache) {
+  const cache = {};
+  for (const eventId of Object.keys(eventCache)) {
+    let path = '/check-ins/v2/events/' + eventId + '/event_periods?per_page=100';
+    while (path) {
+      const r = pcoGetHistory(PCO_HOST + path, auth);
+      for (const ep of (r.data || [])) {
+        cache[ep.id] = { event_id: eventId, starts_at: ep.attributes.starts_at || '' };
+      }
+      const next = r.links && r.links.next;
+      path = next ? next.replace(PCO_HOST, '') : null;
+    }
+  }
+  return cache;
 }
 
 // ─── Progress persistence ─────────────────────────────────────────────────────
