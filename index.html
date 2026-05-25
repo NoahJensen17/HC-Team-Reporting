@@ -351,11 +351,16 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <div class="mcard"><div class="mc-lbl">Declined</div><div class="mc-val cr" id="pc-decl">—</div></div>
       <div class="mcard"><div class="mc-lbl">Confirm Rate</div><div class="mc-val cb" id="pc-rate">—</div></div>
     </div>
-    <div class="tbl-card"><table><thead><tr>
-      <th>Date</th><th>Team</th><th>Scheduled</th>
-      <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
-    </tr></thead><tbody id="pc-body"></tbody></table>
-    <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
+    <div class="tbl-card">
+      <div class="tbl-toolbar">
+        <select class="fsel" id="pc-fteam" onchange="applyPcAttFilters()"><option value="">All teams</option></select>
+        <select class="fsel" id="pc-fdate" onchange="applyPcAttFilters()"><option value="">All dates</option></select>
+      </div>
+      <table><thead><tr>
+        <th>Date</th><th>Team</th><th>Scheduled</th>
+        <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
+      </tr></thead><tbody id="pc-body"></tbody></table>
+      <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
     </div>
   </div>
 
@@ -1092,21 +1097,35 @@ function renderAttendance(data){
   });
 }
 function renderPcAttendance(){
-  var sc=filterSchedByPeriod(schedData,G,OFF);
+  var base=filterSchedByPeriod(schedData,G,OFF);
+  // Populate filter dropdowns, preserving current selection if still valid.
+  function repopulate(id,vals){
+    var el=document.getElementById(id);if(!el)return;
+    var cur=el.value;
+    el.innerHTML='<option value="">'+(id==='pc-fteam'?'All teams':'All dates')+'</option>';
+    vals.forEach(function(v){var x=document.createElement('option');x.value=v;x.textContent=v;el.appendChild(x);});
+    if(vals.indexOf(cur)!==-1)el.value=cur;
+  }
+  repopulate('pc-fteam',[...new Set(base.map(function(r){return r.team;}).filter(Boolean))].sort());
+  repopulate('pc-fdate',[...new Set(base.map(function(r){return r.plan_date;}).filter(Boolean))].sort());
+  applyPcAttFilters(base);
+}
+function applyPcAttFilters(base){
+  if(!base)base=filterSchedByPeriod(schedData,G,OFF);
+  var tm=(document.getElementById('pc-fteam')||{}).value||'';
+  var dt=(document.getElementById('pc-fdate')||{}).value||'';
+  var sc=base.filter(function(r){return(!tm||r.team===tm)&&(!dt||r.plan_date===dt);});
   var total=sc.length;
   var conf=sc.filter(function(r){return r.status==='Confirmed';}).length;
   var unci=sc.filter(function(r){return r.status==='Unconfirmed';}).length;
   var decl=sc.filter(function(r){return r.status==='Declined';}).length;
-  setEl('pc-total',total||'—');
-  setEl('pc-conf',conf||'—');
-  setEl('pc-unci',unci||'—');
-  setEl('pc-decl',decl||'—');
+  setEl('pc-total',total||'—');setEl('pc-conf',conf||'—');setEl('pc-unci',unci||'—');setEl('pc-decl',decl||'—');
   setEl('pc-rate',total?Math.round(conf/total*100)+'%':'—');
   var groups={};
   sc.forEach(function(r){
     var key=r.plan_date+'|'+r.team;
-    if(!groups[key])groups[key]={date:r.plan_date,team:r.team,total:0,conf:0,unci:0,decl:0};
-    var g=groups[key];g.total++;
+    if(!groups[key])groups[key]={date:r.plan_date,dates:r.plan_dates,team:r.team,total:0,conf:0,unci:0,decl:0,people:[]};
+    var g=groups[key];g.total++;g.people.push(r);
     if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
   });
   var rows=Object.values(groups).sort(function(a,b){return a.date.localeCompare(b.date)||a.team.localeCompare(b.team);});
@@ -1114,15 +1133,52 @@ function renderPcAttendance(){
   tbody.innerHTML='';
   var emEl=document.getElementById('pc-empty');if(emEl)emEl.style.display=rows.length?'none':'block';
   rows.forEach(function(g){
-    var tr=document.createElement('tr');
+    var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+g.date+'</td>'
       +'<td style="font-weight:600">'+g.team+'</td>'
       +'<td>'+g.total+'</td>'
       +'<td style="color:var(--green);font-weight:600">'+g.conf+'</td>'
       +'<td style="color:var(--amber)">'+g.unci+'</td>'
       +'<td style="color:var(--red)">'+g.decl+'</td>';
+    (function(grp){tr.onclick=function(){openPcAttDetail(grp);};})(g);
     tbody.appendChild(tr);
   });
+}
+function openPcAttDetail(g){
+  var statusOrder={Confirmed:0,Unconfirmed:1,Declined:2};
+  var sorted=g.people.slice().sort(function(a,b){
+    var ao=statusOrder[a.status]!==undefined?statusOrder[a.status]:3;
+    var bo=statusOrder[b.status]!==undefined?statusOrder[b.status]:3;
+    return ao-bo||a.person_name.localeCompare(b.person_name);
+  });
+  var conf=sorted.filter(function(p){return p.status==='Confirmed';});
+  var unci=sorted.filter(function(p){return p.status==='Unconfirmed';});
+  var decl=sorted.filter(function(p){return p.status==='Declined';});
+  function personRow(p){
+    var scls=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
+    return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">'
+      +'<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>'
+      +(p.position?'<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>':'')
+      +(p.decline_reason?'<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>':'')
+      +'</div><span class="badge '+scls+'">'+p.status+'</span></div>';
+  }
+  function section(label,color,people){
+    if(!people.length)return'';
+    return'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';margin:12px 0 6px">'+label+' ('+people.length+')</div>'
+      +people.map(personRow).join('');
+  }
+  var html='<div class="d-title">'+g.team+'</div>'
+    +'<div class="d-sub">'+(g.dates||g.date)+'</div>'
+    +'<div class="d-sec">Volunteer Breakdown</div>'
+    +'<div class="stat-grid" style="margin-bottom:12px">'
+    +stat('Scheduled',g.total)+stat('Confirmed',g.conf)+stat('Unconfirmed',g.unci)+stat('Declined',g.decl)
+    +stat('Confirm Rate',g.total?Math.round(g.conf/g.total*100)+'%':'—')
+    +'</div>'
+    +section('Confirmed','var(--green)',conf)
+    +section('Unconfirmed','var(--amber)',unci)
+    +section('Declined','var(--red)',decl);
+  document.getElementById('d-content').innerHTML=html;
+  openOv();
 }
 function renderGuests(data){
   setEl('gg-gst',sum(data,'firstTimeGuests'));setEl('gg-cin',sum(data,'connectCards'));
