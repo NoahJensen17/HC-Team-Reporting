@@ -30,8 +30,7 @@ const CI_TAB_NAME    = 'CheckIns_People';
 const CI_HEADERS     = [
   'ci_id', 'event_name', 'event_id', 'period_id', 'period_starts_at',
   'first_name', 'last_name', 'kind', 'checked_in_at', 'checked_out_at',
-  'one_time_guest', 'security_code', 'number',
-  'emergency_contact_name', 'emergency_contact_phone_number', 'medical_notes',
+  'one_time_guest',
 ];
 
 // Stop fetching after 4.5 minutes to stay clear of the 6-minute hard kill
@@ -144,11 +143,6 @@ function pcoCheckInsHistoryRun() {
         a.created_at                     || '',
         a.checked_out_at                 || '',
         a.one_time_guest ? 'true' : 'false',
-        a.security_code                  || '',
-        a.number != null ? a.number : '',
-        a.emergency_contact_name         || '',
-        a.emergency_contact_phone_number || '',
-        a.medical_notes                  || '',
       ]);
     }
 
