@@ -1131,16 +1131,17 @@ function applyPcAttFilters(base){
     var g=groups[key];g.total++;g.people.push(r);
     if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
   });
+  function pcaDateVal(d){return d?new Date(d).getTime():0;}
   var rows=Object.values(groups).sort(function(a,b){
-    var k=pcaSortState.key,asc=pcaSortState.asc;
-    var av=a[k],bv=b[k];
-    var cmp=typeof av==='number'?(av-bv):String(av).localeCompare(String(bv));
+    var k=pcaSortState.key,asc=pcaSortState.asc,cmp;
+    if(k==='date')cmp=pcaDateVal(a.date)-pcaDateVal(b.date);
+    else if(k==='total')cmp=a.total-b.total;
+    else cmp=String(a[k]).localeCompare(String(b[k]));
     if(!asc)cmp=-cmp;
     if(cmp!==0)return cmp;
-    // Tiebreakers: team asc, then date desc
     var tc=k!=='team'?a.team.localeCompare(b.team):0;
     if(tc!==0)return tc;
-    return k!=='date'?b.date.localeCompare(a.date):0;
+    return k!=='date'?pcaDateVal(b.date)-pcaDateVal(a.date):0;
   });
   // Update header indicators
   var pcaLabels={date:'Date',team:'Team',total:'Scheduled'};
