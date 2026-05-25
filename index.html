@@ -660,7 +660,7 @@ function getSundaysInPeriod(gran,offset){
 }
 
 // ── DATA LOADING ─────────────────────────────────────────────────────────
-function sheetURL(id,tab){return'https://sheets.googleapis.com/v4/spreadsheets/'+id+'/values/'+encodeURIComponent(tab)+'?key='+API_KEY;}
+function sheetURL(id,tab){return'https://sheets.googleapis.com/v4/spreadsheets/'+id+'/values/'+encodeURIComponent(tab)+'?valueRenderOption=FORMATTED_VALUE&key='+API_KEY;}
 function rowsToObjects(values){
   if(!values||values.length<2)return[];
   var hdrs=values[0].map(function(h){return h.toString().trim();});
@@ -736,7 +736,8 @@ function buildCheckinLookup(ciPeople){
     var ts=ci.period_starts_at||ci.checked_in_at;
     if(!ts)return;
     var key=ci.person_id||(ci.first_name+' '+ci.last_name).trim().toLowerCase();
-    var d=new Date(ts);
+    var d=parseDate(ts);
+    if(!d)return;
     set.add(key+'|'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
   });
   return set;
@@ -848,7 +849,7 @@ function renderGlance(){
   setMetric('g-crd','g-crd-d',sum(cur,'connectCards'),sum(prev,'connectCards'));
   setMetric('g-su','g-su-d',sum(cur,'signUps'),sum(prev,'signUps'));
   setMetric('g-chk','g-chk-d',chkCur,chkPrv,function(v){return v+'%';});
-  var ciCur=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=new Date(ts);return!isNaN(d)&&d>=b.start&&d<=b.end;});
+  var ciCur=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=b.start&&d<=b.end;});
   var ciEl=document.getElementById('g-ci-total');
   if(ciEl)ciEl.textContent=ciCur.length?'PCO Check-ins: '+ciCur.length:'';
 
@@ -1180,7 +1181,7 @@ function applyPcAttFilters(base){
   });
   var ciTotal=Object.values(groups).reduce(function(a,g){return a+g.checkins;},0);
   setEl('pc-checkins',ciTotal||'—');
-  function pcaDateVal(d){return d?new Date(d).getTime():0;}
+  function pcaDateVal(d){var p=parseDate(d);return p?p.getTime():0;}
   var rows=Object.values(groups).sort(function(a,b){
     var k=pcaSortState.key,asc=pcaSortState.asc,cmp;
     if(k==='date')cmp=pcaDateVal(a.date)-pcaDateVal(b.date);
@@ -1539,7 +1540,7 @@ function filterSchedByPeriod(data,gran,off){
 }
 function renderScheduling(){
   var b=getPeriodBounds(G,OFF);
-  var ciP=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=new Date(ts);return!isNaN(d)&&d>=b.start&&d<=b.end;});
+  var ciP=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=b.start&&d<=b.end;});
   var sc=filterSchedByPeriod(schedData,G,OFF);
   setEl('s-conf',sc.filter(function(r){return r.status==='Confirmed';}).length);
   setEl('s-unci',sc.filter(function(r){return r.status==='Unconfirmed';}).length);
