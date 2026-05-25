@@ -361,6 +361,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
         <th id="pca-th-date" onclick="pcaSort('date')">Date</th>
         <th id="pca-th-team" onclick="pcaSort('team')">Team</th>
         <th id="pca-th-total" onclick="pcaSort('total')">Scheduled</th>
+        <th style="color:var(--blue2)">Check-ins</th>
         <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
       </tr></thead><tbody id="pc-body"></tbody></table>
       <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
@@ -521,10 +522,12 @@ var TAB_GRADS='HC Connect Data';
 var TAB_ONBOARDING='Onboarding Tracking Data';
 var TAB_CHECKINS='CheckIns_Attendance';
 var TAB_SCHEDULING='Services_Scheduling';
+var TAB_CHECKINS_PEOPLE='CheckIns_People';
 
 // ── STATE ────────────────────────────────────────────────────────────────
 var G='month', OFF=0;
-var reportData=[], gradsData=[], onboardData=[], checkInData=[], schedData=[];
+var reportData=[], gradsData=[], onboardData=[], checkInData=[], schedData=[], checkInPeopleData=[];
+var ciPersonLookup=null;
 var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true}, sSortState={key:'plan_date',asc:true};
 var pcaSortState={key:'date',asc:false};
 var loaded=0, pcoLoaded=0;
@@ -720,6 +723,21 @@ function mapCheckIn(o,i){
     regular:toNum(o['regular_count']),guest:toNum(o['guest_count']),
     volunteer:toNum(o['volunteer_count']),total:toNum(o['total_count'])};
 }
+function mapCheckInPerson(o){
+  return{first_name:o['first_name']||'',last_name:o['last_name']||'',
+    period_starts_at:o['period_starts_at']||'',checked_in_at:o['checked_in_at']||''};
+}
+function buildCheckinLookup(ciPeople){
+  var set=new Set();
+  ciPeople.forEach(function(ci){
+    var ts=ci.period_starts_at||ci.checked_in_at;
+    if(!ts)return;
+    var name=(ci.first_name+' '+ci.last_name).trim().toLowerCase();
+    var d=new Date(ts);
+    set.add(name+'|'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
+  });
+  return set;
+}
 function mapSched(o,i){
   // Detect shifted historical rows: pp_id contains letters (service type name)
   // instead of a numeric PCO ID. Remap by shifting all fields right by one.
@@ -756,6 +774,12 @@ window.onload=function(){
   fetch(sheetURL(SHEET_ID_PCO,TAB_SCHEDULING)).then(function(r){return r.json();})
     .then(function(d){schedData=rowsToObjects(d.values).map(mapSched);onPcoDataLoaded();})
     .catch(function(){onPcoDataLoaded();});
+  fetch(sheetURL(SHEET_ID_PCO,TAB_CHECKINS_PEOPLE)).then(function(r){return r.json();})
+    .then(function(d){
+      checkInPeopleData=rowsToObjects(d.values).map(mapCheckInPerson);
+      ciPersonLookup=buildCheckinLookup(checkInPeopleData);
+      applyPcAttFilters();
+    }).catch(function(){});
 };
 function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
@@ -1143,9 +1167,18 @@ function applyPcAttFilters(base){
   var groups={};
   sc.forEach(function(r){
     var key=r.plan_date+'|'+r.team;
-    if(!groups[key])groups[key]={date:r.plan_date,dates:r.plan_dates,team:r.team,total:0,conf:0,unci:0,decl:0,people:[]};
+    if(!groups[key])groups[key]={date:r.plan_date,dates:r.plan_dates,team:r.team,total:0,conf:0,unci:0,decl:0,checkins:0,people:[]};
     var g=groups[key];g.total++;g.people.push(r);
     if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
+  });
+  var ciLookup=ciPersonLookup||new Set();
+  Object.values(groups).forEach(function(g){
+    var dt=parseDate(g.date);
+    if(!dt){g.checkins=0;return;}
+    var dk=dt.getFullYear()+'-'+(dt.getMonth()+1)+'-'+dt.getDate();
+    g.checkins=g.people.filter(function(p){
+      return ciLookup.has((p.person_name||'').trim().toLowerCase()+'|'+dk);
+    }).length;
   });
   function pcaDateVal(d){return d?new Date(d).getTime():0;}
   var rows=Object.values(groups).sort(function(a,b){
@@ -1176,6 +1209,7 @@ function applyPcAttFilters(base){
     tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+gdLabel+'</td>'
       +'<td style="font-weight:600">'+g.team+'</td>'
       +'<td>'+g.total+'</td>'
+      +'<td style="color:var(--blue2)">'+(g.checkins||'—')+'</td>'
       +'<td style="color:var(--green);font-weight:600">'+g.conf+'</td>'
       +'<td style="color:var(--amber)">'+g.unci+'</td>'
       +'<td style="color:var(--red)">'+g.decl+'</td>';
@@ -1216,6 +1250,7 @@ function openPcAttDetail(g){
   html+='<div class="d-sec">Volunteer Breakdown</div>';
   html+='<div class="stat-grid" style="margin-bottom:12px">';
   html+=stat('Scheduled',g.total);
+  html+=statC('Check-ins',g.checkins||'—','var(--blue2)');
   html+=statC('Confirmed',g.conf,'var(--green)');
   html+=statC('Unconfirmed',g.unci,'var(--amber)');
   html+=statC('Declined',g.decl,'var(--red)');
