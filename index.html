@@ -1230,7 +1230,7 @@ function openPcAttDetail(g){
         +'<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span>'
         +'<span style="display:flex;gap:10px;font-size:12px;font-weight:600">'
         +(pc?'<span style="color:var(--green)">✓ '+pc+'</span>':'')
-        +(pu?'<span style="color:var(--amber)">'?' '+pu+'</span>':'')
+        +(pu?'<span style="color:var(--amber)">? '+pu+'</span>':'')
         +(pd?'<span style="color:var(--red)">✗ '+pd+'</span>':'')
         +'</span></div>'
         +people.map(function(p){return personRow(p,true);}).join('')
