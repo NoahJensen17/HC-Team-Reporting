@@ -92,15 +92,6 @@ function pcoPullAll() {
       }
     }
 
-    // CheckIns_Attendance — incremental fetch by updated_at, upsert by period_id.
-    try {
-      const rows = fetchCheckInAttendance(auth, lastRunAt);
-      upsertTab(ss, 'CheckIns_Attendance', rows, 'period_id');
-    } catch (e) {
-      Logger.log('CheckIns_Attendance FAILED: ' + e.message);
-      errors.push('• CheckIns_Attendance: ' + e.message);
-    }
-
     // CheckIns_People — incremental fetch by updated_at, upsert by ci_id.
     try {
       if (!lastRunAt) {
