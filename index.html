@@ -346,6 +346,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   <div class="tab-panel" id="r-pcattendance">
     <div class="metrics">
       <div class="mcard"><div class="mc-lbl">Total Scheduled</div><div class="mc-val cb" id="pc-total">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Check-ins</div><div class="mc-val cp" id="pc-checkins">—</div></div>
       <div class="mcard"><div class="mc-lbl">Confirmed</div><div class="mc-val cg" id="pc-conf">—</div></div>
       <div class="mcard"><div class="mc-lbl">Unconfirmed</div><div class="mc-val ca" id="pc-unci">—</div></div>
       <div class="mcard"><div class="mc-lbl">Declined</div><div class="mc-val cr" id="pc-decl">—</div></div>
@@ -1134,7 +1135,10 @@ function applyPcAttFilters(base){
   var conf=sc.filter(function(r){return r.status==='Confirmed';}).length;
   var unci=sc.filter(function(r){return r.status==='Unconfirmed';}).length;
   var decl=sc.filter(function(r){return r.status==='Declined';}).length;
-  setEl('pc-total',total||'—');setEl('pc-conf',conf||'—');setEl('pc-unci',unci||'—');setEl('pc-decl',decl||'—');
+  var ciData=filterCheckInByPeriod(checkInData,G,OFF);
+  if(dt){var dtDate=parseDate(dt);ciData=ciData.filter(function(r){var d=new Date(r.starts_at);return d.getFullYear()===dtDate.getFullYear()&&d.getMonth()===dtDate.getMonth()&&d.getDate()===dtDate.getDate();});}
+  var ciTotal=ciData.reduce(function(a,r){return a+r.total;},0);
+  setEl('pc-total',total||'—');setEl('pc-checkins',ciTotal||'—');setEl('pc-conf',conf||'—');setEl('pc-unci',unci||'—');setEl('pc-decl',decl||'—');
   setEl('pc-rate',total?Math.round(conf/total*100)+'%':'—');
   var groups={};
   sc.forEach(function(r){
