@@ -743,7 +743,7 @@ function mapSched(o,i){
   var shifted=ppRaw&&!/^\d+$/.test(ppRaw);
   if(shifted){
     return{id:i+1,pp_id:'',service_type:o['pp_id']||'',
-      plan_date:normDate(o['service_type']||''),plan_dates:o['plan_date']||'',
+      plan_date:o['service_type']||'',plan_dates:o['plan_date']||'',
       plan_title:o['plan_dates']||'',series_title:o['plan_title']||'',
       plan_id:o['series_title']||'',person_name:o['plan_id']||'',status:o['person_name']||'',
       team:o['status']||'',position:o['team']||'',responds_to:o['position']||'',
@@ -751,7 +751,7 @@ function mapSched(o,i){
       status_updated_at:o['notes']||''};
   }
   return{id:i+1,pp_id:ppRaw,person_id:o['person_id']||'',service_type:o['service_type']||'',
-    plan_date:normDate(o['plan_date']||''),plan_dates:o['plan_dates']||'',
+    plan_date:o['plan_date']||'',plan_dates:o['plan_dates']||'',
     plan_title:o['plan_title']||'',series_title:o['series_title']||'',
     plan_id:o['plan_id']||'',person_name:o['person_name']||'',status:o['status']||'',
     team:o['team']||'',position:o['position']||'',responds_to:o['responds_to']||'',
@@ -1134,8 +1134,8 @@ function renderPcAttendance(){
     var rawVals=vals.map(function(v){return typeof v==='object'?v.value:v;});
     if(rawVals.indexOf(cur)!==-1)el.value=cur;
   }
-  repopulate('pc-fteam',[...new Set(base.map(function(r){return r.team;}).filter(Boolean))].sort());
-  var dateOpts=[...new Set(base.map(function(r){return r.plan_date;}).filter(Boolean))]
+  repopulate('pc-fteam',[...new Set(base.map(function(r){return(r.team||'').trim();}).filter(Boolean))].sort());
+  var dateOpts=[...new Set(base.map(function(r){var d=parseDate(r.plan_date);return d?d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate():'';}).filter(Boolean))]
     .map(function(d){
       var dt=parseDate(d);
       return{value:d,ts:dt?dt.getTime():0,label:dt?(dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear():d};
@@ -1148,7 +1148,8 @@ function applyPcAttFilters(base){
   if(!base)base=filterSchedByPeriod(schedData,G,OFF);
   var tm=(document.getElementById('pc-fteam')||{}).value||'';
   var dt=(document.getElementById('pc-fdate')||{}).value||'';
-  var sc=base.filter(function(r){return(!tm||r.team===tm)&&(!dt||r.plan_date===dt);});
+  function rDateKey(r){var d=parseDate(r.plan_date);return d?d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate():'';}
+  var sc=base.filter(function(r){return(!tm||(r.team||'').trim()===tm)&&(!dt||rDateKey(r)===dt);});
   var total=sc.length;
   var conf=sc.filter(function(r){return r.status==='Confirmed';}).length;
   var unci=sc.filter(function(r){return r.status==='Unconfirmed';}).length;
@@ -1157,8 +1158,8 @@ function applyPcAttFilters(base){
   setEl('pc-rate',total?Math.round(conf/total*100)+'%':'—');
   var groups={};
   sc.forEach(function(r){
-    var key=r.plan_date+'|'+r.team;
-    if(!groups[key])groups[key]={date:r.plan_date,dates:r.plan_dates,team:r.team,total:0,conf:0,unci:0,decl:0,checkins:0,people:[]};
+    var key=rDateKey(r)+'|'+(r.team||'').trim();
+    if(!groups[key])groups[key]={date:r.plan_date,dates:r.plan_dates,team:(r.team||'').trim(),total:0,conf:0,unci:0,decl:0,checkins:0,people:[]};
     var g=groups[key];g.total++;g.people.push(r);
     if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
   });
