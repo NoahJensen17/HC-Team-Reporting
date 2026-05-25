@@ -1181,37 +1181,71 @@ function applyPcAttFilters(base){
 }
 function openPcAttDetail(g){
   var statusOrder={Confirmed:0,Unconfirmed:1,Declined:2};
-  var sorted=g.people.slice().sort(function(a,b){
-    var ao=statusOrder[a.status]!==undefined?statusOrder[a.status]:3;
-    var bo=statusOrder[b.status]!==undefined?statusOrder[b.status]:3;
-    return ao-bo||a.person_name.localeCompare(b.person_name);
-  });
-  var conf=sorted.filter(function(p){return p.status==='Confirmed';});
-  var unci=sorted.filter(function(p){return p.status==='Unconfirmed';});
-  var decl=sorted.filter(function(p){return p.status==='Declined';});
-  function personRow(p){
+  function sortPeople(arr){
+    return arr.slice().sort(function(a,b){
+      var ao=statusOrder[a.status]!==undefined?statusOrder[a.status]:3;
+      var bo=statusOrder[b.status]!==undefined?statusOrder[b.status]:3;
+      return ao-bo||a.person_name.localeCompare(b.person_name);
+    });
+  }
+  function personRow(p,hidePos){
     var scls=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
     return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">'
       +'<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>'
-      +(p.position?'<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>':'')
+      +(!hidePos&&p.position?'<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>':'')
       +(p.decline_reason?'<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>':'')
       +'</div><span class="badge '+scls+'">'+p.status+'</span></div>';
   }
   function section(label,color,people){
     if(!people.length)return'';
     return'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';margin:12px 0 6px">'+label+' ('+people.length+')</div>'
-      +people.map(personRow).join('');
+      +people.map(function(p){return personRow(p,false);}).join('');
   }
+
   var html='<div class="d-title">'+g.team+'</div>'
     +'<div class="d-sub">'+(g.dates||g.date)+'</div>'
     +'<div class="d-sec">Volunteer Breakdown</div>'
     +'<div class="stat-grid" style="margin-bottom:12px">'
     +stat('Scheduled',g.total)+stat('Confirmed',g.conf)+stat('Unconfirmed',g.unci)+stat('Declined',g.decl)
     +stat('Confirm Rate',g.total?Math.round(g.conf/g.total*100)+'%':'—')
-    +'</div>'
-    +section('Confirmed','var(--green)',conf)
-    +section('Unconfirmed','var(--amber)',unci)
-    +section('Declined','var(--red)',decl);
+    +'</div>';
+
+  if(g.team==='Hope City Kids'){
+    // Group by position/subteam
+    var byPos={};
+    g.people.forEach(function(p){
+      var pos=p.position||'Unassigned';
+      if(!byPos[pos])byPos[pos]=[];
+      byPos[pos].push(p);
+    });
+    var posNames=Object.keys(byPos).sort();
+    html+='<div class="d-sec" style="margin-top:4px">By Subteam</div>';
+    html+=posNames.map(function(pos){
+      var people=sortPeople(byPos[pos]);
+      var pc=people.filter(function(p){return p.status==='Confirmed';}).length;
+      var pu=people.filter(function(p){return p.status==='Unconfirmed';}).length;
+      var pd=people.filter(function(p){return p.status==='Declined';}).length;
+      return'<div style="margin-bottom:14px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:2px solid var(--g100);margin-bottom:6px">'
+        +'<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span>'
+        +'<span style="display:flex;gap:10px;font-size:12px;font-weight:600">'
+        +(pc?'<span style="color:var(--green)">✓ '+pc+'</span>':'')
+        +(pu?'<span style="color:var(--amber)">'?' '+pu+'</span>':'')
+        +(pd?'<span style="color:var(--red)">✗ '+pd+'</span>':'')
+        +'</span></div>'
+        +people.map(function(p){return personRow(p,true);}).join('')
+        +'</div>';
+    }).join('');
+  } else {
+    var sorted=sortPeople(g.people);
+    var conf=sorted.filter(function(p){return p.status==='Confirmed';});
+    var unci=sorted.filter(function(p){return p.status==='Unconfirmed';});
+    var decl=sorted.filter(function(p){return p.status==='Declined';});
+    html+=section('Confirmed','var(--green)',conf)
+      +section('Unconfirmed','var(--amber)',unci)
+      +section('Declined','var(--red)',decl);
+  }
+
   document.getElementById('d-content').innerHTML=html;
   openOv();
 }
