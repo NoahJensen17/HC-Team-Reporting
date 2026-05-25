@@ -1226,7 +1226,10 @@ function openPcAttDetail(g){
       byPos[pos].push(p);
     });
     var posNames=Object.keys(byPos).sort();
-    html+='<div class="d-sec" style="margin-top:4px">By Subteam</div>';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">'
+      +'<div class="d-sec" style="margin:0">By Subteam</div>'
+      +'<button onclick="toggleAllPcaSubs()" id="pca-expand-btn" style="font-size:11px;font-weight:600;color:var(--blue2);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:4px"><span id="pca-expand-icon">&#9660;&#9660;</span> Collapse All</button>'
+      +'</div>';
     posNames.forEach(function(pos,idx){
       var people=sortPeople(byPos[pos]);
       var pc=people.filter(function(p){return p.status==='Confirmed';}).length;
@@ -1273,6 +1276,23 @@ function togglePcaSub(id){
   var open=body.style.display!=='none';
   body.style.display=open?'none':'block';
   if(arrow)arrow.innerHTML=open?'&#9654;':'&#9660;';
+}
+function toggleAllPcaSubs(){
+  var btn=document.getElementById('pca-expand-btn');
+  var icon=document.getElementById('pca-expand-icon');
+  if(!btn)return;
+  var collapsing=btn.textContent.trim().indexOf('Collapse')!==-1;
+  var i=0;
+  while(true){
+    var body=document.getElementById('pca-sub-'+i);
+    var arrow=document.getElementById('pca-sub-'+i+'-arrow');
+    if(!body)break;
+    body.style.display=collapsing?'none':'block';
+    if(arrow)arrow.innerHTML=collapsing?'&#9654;':'&#9660;';
+    i++;
+  }
+  icon.innerHTML=collapsing?'&#9650;&#9650;':'&#9660;&#9660;';
+  btn.innerHTML='<span id="pca-expand-icon">'+(collapsing?'&#9650;&#9650;':'&#9660;&#9660;')+'</span> '+(collapsing?'Expand All':'Collapse All');
 }
 function pcaSort(key){
   if(pcaSortState.key===key){pcaSortState.asc=!pcaSortState.asc;}
