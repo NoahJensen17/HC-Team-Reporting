@@ -46,13 +46,13 @@ const ALERT_EMAIL       = 'ninjanobe@gmail.com';
 
 // ─── Trigger setup ────────────────────────────────────────────────────────────
 
-// Run once to create the every-5-minute trigger.
+// Run once to create the every-30-minute trigger.
 function setupSyncTrigger() {
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === 'pcoPullAll')
     .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('pcoPullAll').timeBased().everyMinutes(10).create();
-  Logger.log('Sync trigger created: pcoPullAll every 10 minutes.');
+  ScriptApp.newTrigger('pcoPullAll').timeBased().everyMinutes(30).create();
+  Logger.log('Sync trigger created: pcoPullAll every 30 minutes (active 4am–10pm CST).');
 }
 
 // Run to stop the scheduled sync.
@@ -66,6 +66,14 @@ function removeSyncTrigger() {
 // ─── Main entry point ────────────────────────────────────────────────────────
 
 function pcoPullAll() {
+  // Only run between 4:00am and 10:00pm CST (America/Chicago).
+  const nowCST = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const hour   = nowCST.getHours();
+  if (hour < 4 || hour >= 22) {
+    Logger.log('Outside active window (4am–10pm CST) — skipping sync.');
+    return;
+  }
+
   const errors = [];
 
   try {

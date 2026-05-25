@@ -597,10 +597,15 @@ window.addEventListener('load',function(){if(!isStandalone&&(isIOS||isAndroid))s
 // ── DATE / PERIOD UTILS ──────────────────────────────────────────────────
 function parseDate(str){
   if(!str)return null;
-  var m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if(m)return new Date(parseInt(m[3]),parseInt(m[1])-1,parseInt(m[2]));
-  var m2=str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(m2)return new Date(parseInt(m2[1]),parseInt(m2[2])-1,parseInt(m2[3]));
+  str=String(str).trim();
+  // ISO prefix: YYYY-M-D (handles zero-padded, single-digit, and ISO timestamps)
+  // Always construct with local-time new Date(y,m,d) to avoid UTC→local date shift
+  var mi=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(mi)return new Date(parseInt(mi[1]),parseInt(mi[2])-1,parseInt(mi[3]));
+  // M/D/YYYY or MM/DD/YYYY
+  var ms=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(ms)return new Date(parseInt(ms[3]),parseInt(ms[1])-1,parseInt(ms[2]));
+  // fallback (avoid UTC shift for date-only strings by replacing hyphens)
   var d=new Date(str);return isNaN(d.getTime())?null:d;
 }
 function normDate(str){
