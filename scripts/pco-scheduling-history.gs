@@ -200,6 +200,9 @@ function pcoSchedulingHistoryRun() {
   deleteTrigger_();
   Logger.log('COMPLETE — all ' + teams.length + ' teams processed. Total rows written: '
     + progress.rowsWritten);
+  // Remove any duplicates that may have accumulated from overlapping history
+  // and incremental sync writes during the backfill window.
+  deduplicateServicesScheduling();
 }
 
 /**

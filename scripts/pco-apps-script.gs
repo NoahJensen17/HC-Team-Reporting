@@ -205,6 +205,7 @@ function deduplicateServicesScheduling() {
   headers.forEach((h, i) => col[h.toString().trim()] = i);
 
   const ci   = col['pp_id'];
+  const cpid = col['person_id'];
   const cp   = col['plan_id'];
   const cn   = col['person_name'];
   const ct   = col['team'];
@@ -215,39 +216,48 @@ function deduplicateServicesScheduling() {
     return;
   }
 
-  // First pass: for each composite key find the index of the "best" row.
+  // Build a dedup key for each row.
+  // Rows with a numeric pp_id use it directly as the key — it is the canonical
+  // PCO unique identifier for a person-on-a-plan assignment.
+  // Rows missing pp_id fall back to the composite plan_id+person_id+person_name+team+position.
+  function rowKey(row) {
+    const ppId = (row[ci] || '').toString().trim();
+    if (/^\d+$/.test(ppId)) return 'pp:' + ppId;
+    const pid  = cpid !== undefined ? (row[cpid] || '').toString().trim() : '';
+    const base = pid
+      ? [row[cp], pid, row[ct], row[cpos]]
+      : [row[cp], row[cn], row[ct], row[cpos]];
+    return 'comp:' + base.map(v => (v || '').toString().trim()).join('|');
+  }
+
+  // First pass: for each key keep the "best" row.
   // Best = has a numeric pp_id; ties keep the first occurrence.
-  const best = {}; // key → data-array index of best row
-
+  const best = {};
   for (let i = 1; i < data.length; i++) {
-    const row        = data[i];
-    const planId     = (row[cp]   || '').toString().trim();
-    const personName = (row[cn]   || '').toString().trim();
-    if (!planId || !personName) continue;          // skip blank / header-only rows
+    const row  = data[i];
+    const planId     = (row[cp] || '').toString().trim();
+    const personName = (row[cn] || '').toString().trim();
+    if (!planId || !personName) continue;
 
-    const key    = [planId, personName, (row[ct] || '').toString().trim(),
-                    (row[cpos] || '').toString().trim()].join('|');
+    const key    = rowKey(row);
     const ppId   = (row[ci] || '').toString().trim();
     const hasNum = /^\d+$/.test(ppId);
 
     if (best[key] === undefined) {
       best[key] = i;
     } else {
-      const prevPp     = (data[best[key]][ci] || '').toString().trim();
-      const prevHasNum = /^\d+$/.test(prevPp);
-      if (!prevHasNum && hasNum) best[key] = i; // upgrade to numeric pp_id row
-      // else keep the existing best row
+      const prevHasNum = /^\d+$/.test((data[best[key]][ci] || '').toString().trim());
+      if (!prevHasNum && hasNum) best[key] = i;
     }
   }
 
-  // Second pass: build the output keeping only best-row indices (plus rows
-  // with no plan_id/person_name which are left as-is).
+  // Second pass: keep only best-row indices, plus unkeyed rows.
   const keepIdx = new Set(Object.values(best));
   const kept    = [headers];
   let   removed = 0;
 
   for (let i = 1; i < data.length; i++) {
-    const row        = data[i];
+    const row = data[i];
     const planId     = (row[cp] || '').toString().trim();
     const personName = (row[cn] || '').toString().trim();
     if (!planId || !personName) { kept.push(row); continue; }
