@@ -101,6 +101,20 @@ function pcoPullAll() {
       errors.push('• CheckIns_Attendance: ' + e.message);
     }
 
+    // CheckIns_People — incremental fetch by updated_at, upsert by ci_id.
+    try {
+      if (!lastRunAt) {
+        Logger.log('CheckIns_People: no prior run timestamp — skipping. '
+          + 'Run pcoCheckInsHistoryStart() for the initial load first.');
+      } else {
+        const rows = fetchCheckInsPeople(auth, lastRunAt);
+        upsertTab(ss, 'CheckIns_People', rows, 'ci_id');
+      }
+    } catch (e) {
+      Logger.log('CheckIns_People FAILED: ' + e.message);
+      errors.push('• CheckIns_People: ' + e.message);
+    }
+
     // Services_Scheduling — incremental fetch by updated_at, upsert by pp_id.
     try {
       if (!lastRunAt) {
@@ -342,6 +356,54 @@ function fetchCheckInAttendance(auth, since) {
     }
     const evNext = evResp.links && evResp.links.next;
     evPath = evNext ? evNext.replace(PCO_HOST, '') : null;
+  }
+  return out;
+}
+
+// Fetches individual check-in records updated since `since`.
+// Incremental runs are small so include=person,event_period,event is safe.
+function fetchCheckInsPeople(auth, since) {
+  const out    = [];
+  const filter = since ? '&where[updated_at][gte]=' + encodeURIComponent(since) : '';
+  let   path   = '/check-ins/v2/check_ins?per_page=100&include=person,event_period,event' + filter;
+
+  while (path) {
+    const resp = pcoGet(PCO_HOST + path, auth);
+
+    const personMap = {};
+    const periodMap = {};
+    const eventMap  = {};
+    for (const inc of (resp.included || [])) {
+      if (inc.type === 'Person')      personMap[inc.id] = { first: inc.attributes.first_name || '', last: inc.attributes.last_name || '' };
+      else if (inc.type === 'EventPeriod') periodMap[inc.id] = inc.attributes.starts_at || '';
+      else if (inc.type === 'Event')  eventMap[inc.id]  = inc.attributes.name || '';
+    }
+
+    for (const ci of (resp.data || [])) {
+      const a        = ci.attributes;
+      const rel      = ci.relationships || {};
+      const personId = rel.person       && rel.person.data       ? rel.person.data.id       : null;
+      const periodId = rel.event_period && rel.event_period.data ? rel.event_period.data.id : null;
+      const eventId  = rel.event        && rel.event.data        ? rel.event.data.id        : null;
+      const person   = (personId && personMap[personId]) || null;
+
+      out.push({
+        ci_id:            ci.id,
+        event_name:       (eventId  && eventMap[eventId])  || '',
+        event_id:         eventId   || '',
+        period_id:        periodId  || '',
+        period_starts_at: (periodId && periodMap[periodId]) || '',
+        first_name:       person ? person.first : (a.first_name || ''),
+        last_name:        person ? person.last  : (a.last_name  || ''),
+        kind:             a.kind             || '',
+        checked_in_at:    a.created_at       || '',
+        checked_out_at:   a.checked_out_at   || '',
+        one_time_guest:   a.one_time_guest ? 'true' : 'false',
+      });
+    }
+
+    const next = resp.links && resp.links.next;
+    path = next ? next.replace(PCO_HOST, '') : null;
   }
   return out;
 }
