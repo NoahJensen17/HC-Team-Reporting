@@ -46,21 +46,48 @@ const ALERT_EMAIL       = 'ninjanobe@gmail.com';
 
 // ─── Trigger setup ────────────────────────────────────────────────────────────
 
-// Run once to create the every-30-minute trigger.
+/**
+ * Run once to set up the :00/:30 aligned sync cadence.
+ * Schedules a one-time anchor trigger at the next :00 or :30 mark, which then
+ * creates the recurring every-30-minute trigger from that aligned start point.
+ */
 function setupSyncTrigger() {
+  // Clear any existing sync and alignment triggers.
   ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === 'pcoPullAll')
+    .filter(t => ['pcoPullAll', 'syncAligner_'].includes(t.getHandlerFunction()))
     .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('pcoPullAll').timeBased().everyMinutes(30).create();
-  Logger.log('Sync trigger created: pcoPullAll every 30 minutes (active 4am–10pm CST).');
+
+  // Find the next :00 or :30 boundary.
+  const now    = new Date();
+  const anchor = new Date(now);
+  anchor.setSeconds(0, 0);
+  const m = now.getMinutes();
+  anchor.setMinutes(m < 30 ? 30 : 60); // :30 this hour, or :00 next hour (minute 60 rolls over)
+
+  ScriptApp.newTrigger('syncAligner_').timeBased().at(anchor).create();
+  Logger.log('Sync aligner scheduled for ' + anchor.toLocaleTimeString()
+    + '. Recurring :00/:30 cadence (4am–10pm CST) starts then.');
 }
 
-// Run to stop the scheduled sync.
+/**
+ * One-time trigger fired at the first :00 or :30 boundary after setupSyncTrigger().
+ * Deletes itself, then creates the recurring 30-minute trigger anchored to this moment.
+ */
+function syncAligner_() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'syncAligner_')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('pcoPullAll').timeBased().everyMinutes(30).create();
+  Logger.log('Recurring sync trigger created from aligned start: ' + new Date());
+  pcoPullAll();
+}
+
+// Run to stop the scheduled sync completely.
 function removeSyncTrigger() {
   ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === 'pcoPullAll')
+    .filter(t => ['pcoPullAll', 'syncAligner_'].includes(t.getHandlerFunction()))
     .forEach(t => ScriptApp.deleteTrigger(t));
-  Logger.log('Sync trigger removed.');
+  Logger.log('Sync triggers removed.');
 }
 
 // ─── Main entry point ────────────────────────────────────────────────────────
