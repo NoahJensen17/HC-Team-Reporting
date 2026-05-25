@@ -1220,20 +1220,26 @@ function openPcAttDetail(g){
     });
     var posNames=Object.keys(byPos).sort();
     html+='<div class="d-sec" style="margin-top:4px">By Subteam</div>';
-    html+=posNames.map(function(pos){
+    html+=posNames.map(function(pos,idx){
       var people=sortPeople(byPos[pos]);
       var pc=people.filter(function(p){return p.status==='Confirmed';}).length;
       var pu=people.filter(function(p){return p.status==='Unconfirmed';}).length;
       var pd=people.filter(function(p){return p.status==='Declined';}).length;
-      return'<div style="margin-bottom:14px">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:2px solid var(--g100);margin-bottom:6px">'
+      var bodyId='pca-sub-'+idx;
+      return'<div style="margin-bottom:6px">'
+        +'<div onclick="togglePcaSub(\''+ bodyId +'\')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:var(--rs);background:var(--g100);cursor:pointer;user-select:none">'
+        +'<span style="display:flex;align-items:center;gap:6px">'
+        +'<span id="'+bodyId+'-arrow" style="font-size:10px;color:var(--g400)">&#9660;</span>'
         +'<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span>'
+        +'</span>'
         +'<span style="display:flex;gap:10px;font-size:12px;font-weight:600">'
-        +(pc?'<span style="color:var(--green)">✓ '+pc+'</span>':'')
+        +(pc?'<span style="color:var(--green)">&#10003; '+pc+'</span>':'')
         +(pu?'<span style="color:var(--amber)">? '+pu+'</span>':'')
-        +(pd?'<span style="color:var(--red)">✗ '+pd+'</span>':'')
+        +(pd?'<span style="color:var(--red)">&#10007; '+pd+'</span>':'')
         +'</span></div>'
+        +'<div id="'+bodyId+'" style="margin-top:4px;margin-bottom:8px">'
         +people.map(function(p){return personRow(p,true);}).join('')
+        +'</div>'
         +'</div>';
     }).join('');
   } else {
@@ -1248,6 +1254,14 @@ function openPcAttDetail(g){
 
   document.getElementById('d-content').innerHTML=html;
   openOv();
+}
+function togglePcaSub(id){
+  var body=document.getElementById(id);
+  var arrow=document.getElementById(id+'-arrow');
+  if(!body)return;
+  var open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  if(arrow)arrow.innerHTML=open?'&#9654;':'&#9660;';
 }
 function pcaSort(key){
   if(pcaSortState.key===key){pcaSortState.asc=!pcaSortState.asc;}
