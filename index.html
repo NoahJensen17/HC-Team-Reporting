@@ -520,13 +520,12 @@ var SHEET_ID_PCO='1VPBv6RuwhFWjBWvOS2rVyDTzzrJCJqGOuEeYemwQKeI';
 var TAB_REPORTS='HC Team Form Output';
 var TAB_GRADS='HC Connect Data';
 var TAB_ONBOARDING='Onboarding Tracking Data';
-var TAB_CHECKINS='CheckIns_Attendance';
 var TAB_SCHEDULING='Services_Scheduling';
 var TAB_CHECKINS_PEOPLE='CheckIns_People';
 
 // ── STATE ────────────────────────────────────────────────────────────────
 var G='month', OFF=0;
-var reportData=[], gradsData=[], onboardData=[], checkInData=[], schedData=[], checkInPeopleData=[];
+var reportData=[], gradsData=[], onboardData=[], schedData=[], checkInPeopleData=[];
 var ciPersonLookup=null;
 var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true}, sSortState={key:'plan_date',asc:true};
 var pcaSortState={key:'date',asc:false};
@@ -717,12 +716,6 @@ function mapOnboarding(o,i){
     progress:Math.round((completed/steps.length)*100),completedSteps:completed,totalSteps:steps.length};
 }
 
-function mapCheckIn(o,i){
-  return{id:i+1,event_name:o['event_name']||'',event_id:o['event_id']||'',period_id:o['period_id']||'',
-    starts_at:o['starts_at']||'',ends_at:o['ends_at']||'',
-    regular:toNum(o['regular_count']),guest:toNum(o['guest_count']),
-    volunteer:toNum(o['volunteer_count']),total:toNum(o['total_count'])};
-}
 function mapCheckInPerson(o){
   return{first_name:o['first_name']||'',last_name:o['last_name']||'',
     period_starts_at:o['period_starts_at']||'',checked_in_at:o['checked_in_at']||''};
@@ -768,9 +761,6 @@ window.onload=function(){
     .then(function(d){gradsData=rowsToObjects(d.values).map(mapGrad);onDataLoaded();}).catch(onErr);
   fetch(sheetURL(SHEET_ID_ONBOARDING,TAB_ONBOARDING)).then(function(r){return r.json();})
     .then(function(d){onboardData=rowsToObjects(d.values).map(mapOnboarding);onDataLoaded();}).catch(onErr);
-  fetch(sheetURL(SHEET_ID_PCO,TAB_CHECKINS)).then(function(r){return r.json();})
-    .then(function(d){checkInData=rowsToObjects(d.values).map(mapCheckIn);onPcoDataLoaded();})
-    .catch(function(){onPcoDataLoaded();});
   fetch(sheetURL(SHEET_ID_PCO,TAB_SCHEDULING)).then(function(r){return r.json();})
     .then(function(d){schedData=rowsToObjects(d.values).map(mapSched);onPcoDataLoaded();})
     .catch(function(){onPcoDataLoaded();});
@@ -848,10 +838,9 @@ function renderGlance(){
   setMetric('g-crd','g-crd-d',sum(cur,'connectCards'),sum(prev,'connectCards'));
   setMetric('g-su','g-su-d',sum(cur,'signUps'),sum(prev,'signUps'));
   setMetric('g-chk','g-chk-d',chkCur,chkPrv,function(v){return v+'%';});
-  var ciCur=filterCheckInByPeriod(checkInData,G,OFF);
-  var ciTotal=ciCur.reduce(function(a,r){return a+r.total;},0);
+  var ciCur=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=new Date(ts);return!isNaN(d)&&d>=b.start&&d<=b.end;});
   var ciEl=document.getElementById('g-ci-total');
-  if(ciEl)ciEl.textContent=ciTotal?'PCO Check-ins: '+ciTotal:'';
+  if(ciEl)ciEl.textContent=ciCur.length?'PCO Check-ins: '+ciCur.length:'';
 
   // Team period label
   document.getElementById('team-period-lbl').textContent=b.label;
@@ -1159,10 +1148,7 @@ function applyPcAttFilters(base){
   var conf=sc.filter(function(r){return r.status==='Confirmed';}).length;
   var unci=sc.filter(function(r){return r.status==='Unconfirmed';}).length;
   var decl=sc.filter(function(r){return r.status==='Declined';}).length;
-  var ciData=filterCheckInByPeriod(checkInData,G,OFF);
-  if(dt){var dtDate=parseDate(dt);ciData=ciData.filter(function(r){var d=new Date(r.starts_at);return d.getFullYear()===dtDate.getFullYear()&&d.getMonth()===dtDate.getMonth()&&d.getDate()===dtDate.getDate();});}
-  var ciTotal=ciData.reduce(function(a,r){return a+r.total;},0);
-  setEl('pc-total',total||'—');setEl('pc-checkins',ciTotal||'—');setEl('pc-conf',conf||'—');setEl('pc-unci',unci||'—');setEl('pc-decl',decl||'—');
+  setEl('pc-total',total||'—');setEl('pc-conf',conf||'—');setEl('pc-unci',unci||'—');setEl('pc-decl',decl||'—');
   setEl('pc-rate',total?Math.round(conf/total*100)+'%':'—');
   var groups={};
   sc.forEach(function(r){
@@ -1180,6 +1166,8 @@ function applyPcAttFilters(base){
       return ciLookup.has((p.person_name||'').trim().toLowerCase()+'|'+dk);
     }).length;
   });
+  var ciTotal=Object.values(groups).reduce(function(a,g){return a+g.checkins;},0);
+  setEl('pc-checkins',ciTotal||'—');
   function pcaDateVal(d){return d?new Date(d).getTime():0;}
   var rows=Object.values(groups).sort(function(a,b){
     var k=pcaSortState.key,asc=pcaSortState.asc,cmp;
@@ -1537,17 +1525,14 @@ function filterSchedByPeriod(data,gran,off){
   var b=getPeriodBounds(gran,off);
   return data.filter(function(r){var d=parseDate(r.plan_date);return d&&d>=b.start&&d<=b.end;});
 }
-function filterCheckInByPeriod(data,gran,off){
-  var b=getPeriodBounds(gran,off);
-  return data.filter(function(r){if(!r.starts_at)return false;var d=new Date(r.starts_at);return!isNaN(d)&&d>=b.start&&d<=b.end;});
-}
 function renderScheduling(){
-  var ci=filterCheckInByPeriod(checkInData,G,OFF);
+  var b=getPeriodBounds(G,OFF);
+  var ciP=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=new Date(ts);return!isNaN(d)&&d>=b.start&&d<=b.end;});
   var sc=filterSchedByPeriod(schedData,G,OFF);
   setEl('s-conf',sc.filter(function(r){return r.status==='Confirmed';}).length);
   setEl('s-unci',sc.filter(function(r){return r.status==='Unconfirmed';}).length);
   setEl('s-decl',sc.filter(function(r){return r.status==='Declined';}).length);
-  setEl('s-ci',ci.reduce(function(a,r){return a+r.total;},0));
+  setEl('s-ci',ciP.length);
   applySchedFilters();
 }
 function applySchedFilters(){
