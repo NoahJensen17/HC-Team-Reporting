@@ -28,7 +28,7 @@
 const CI_HISTORY_KEY = 'ci_history_progress';
 const CI_TAB_NAME    = 'CheckIns_People';
 const CI_HEADERS     = [
-  'ci_id', 'event_name', 'event_id', 'period_id', 'period_starts_at',
+  'ci_id', 'person_id', 'event_name', 'event_id', 'period_id', 'period_starts_at',
   'first_name', 'last_name', 'kind', 'checked_in_at', 'checked_out_at',
   'one_time_guest',
 ];
@@ -142,6 +142,7 @@ function pcoCheckInsHistoryRun() {
 
       batch.push([
         ci.id,
+        personId || '',
         eventName,
         eventId  || '',
         periodId || '',

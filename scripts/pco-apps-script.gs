@@ -389,6 +389,7 @@ function fetchCheckInsPeople(auth, since) {
 
       out.push({
         ci_id:            ci.id,
+        person_id:        personId  || '',
         event_name:       (eventId  && eventMap[eventId])  || '',
         event_id:         eventId   || '',
         period_id:        periodId  || '',
@@ -512,9 +513,12 @@ function fetchServicesScheduling(auth) {
         // Keep plans from the past 7 days forward (volunteers may confirm/decline after service).
         if (meta.date && meta.date < cutoffStr) continue;
 
-        const p = pp.attributes;
+        const p        = pp.attributes;
+        const personId = pp.relationships && pp.relationships.person && pp.relationships.person.data
+          ? pp.relationships.person.data.id : null;
         out.push({
           pp_id:             pp.id,
+          person_id:         personId    || '',
           service_type:      item.stName,
           plan_date:         meta.date   || '',
           plan_dates:        meta.dates  || '',

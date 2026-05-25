@@ -28,7 +28,7 @@ const SCHED_HISTORY_KEY   = 'sched_history_progress';
 const SCHED_TAB_NAME      = 'Services_Scheduling';
 const SCHED_STATUS_LABELS = { C: 'Confirmed', U: 'Unconfirmed', D: 'Declined' };
 const SCHED_HEADERS = [
-  'pp_id', 'service_type', 'plan_date', 'plan_dates', 'plan_title', 'series_title',
+  'pp_id', 'person_id', 'service_type', 'plan_date', 'plan_dates', 'plan_title', 'series_title',
   'plan_id', 'person_name', 'status', 'team', 'position',
   'responds_to', 'decline_reason', 'notes', 'status_updated_at', 'prepared_at',
 ];
@@ -143,9 +143,11 @@ function pcoSchedulingHistoryRun() {
       }
 
       for (const pp of (ppResp.data || [])) {
-        const p      = pp.attributes;
-        const planId = pp.relationships && pp.relationships.plan && pp.relationships.plan.data
+        const p        = pp.attributes;
+        const planId   = pp.relationships && pp.relationships.plan && pp.relationships.plan.data
           ? pp.relationships.plan.data.id : null;
+        const personId = pp.relationships && pp.relationships.person && pp.relationships.person.data
+          ? pp.relationships.person.data.id : null;
 
         // Prefer included plan data; fall back to pre-built planMeta cache.
         const meta = (planId && planData[planId])
@@ -156,6 +158,7 @@ function pcoSchedulingHistoryRun() {
 
         batch.push([
           pp.id,
+          personId    || '',
           serviceType,
           meta.date   || '',
           meta.dates  || '',

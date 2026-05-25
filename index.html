@@ -717,7 +717,7 @@ function mapOnboarding(o,i){
 }
 
 function mapCheckInPerson(o){
-  return{first_name:o['first_name']||'',last_name:o['last_name']||'',
+  return{person_id:o['person_id']||'',first_name:o['first_name']||'',last_name:o['last_name']||'',
     period_starts_at:o['period_starts_at']||'',checked_in_at:o['checked_in_at']||''};
 }
 function buildCheckinLookup(ciPeople){
@@ -725,9 +725,9 @@ function buildCheckinLookup(ciPeople){
   ciPeople.forEach(function(ci){
     var ts=ci.period_starts_at||ci.checked_in_at;
     if(!ts)return;
-    var name=(ci.first_name+' '+ci.last_name).trim().toLowerCase();
+    var key=ci.person_id||(ci.first_name+' '+ci.last_name).trim().toLowerCase();
     var d=new Date(ts);
-    set.add(name+'|'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
+    set.add(key+'|'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate());
   });
   return set;
 }
@@ -745,7 +745,7 @@ function mapSched(o,i){
       decline_reason:o['responds_to']||'',notes:o['decline_reason']||'',
       status_updated_at:o['notes']||''};
   }
-  return{id:i+1,pp_id:ppRaw,service_type:o['service_type']||'',
+  return{id:i+1,pp_id:ppRaw,person_id:o['person_id']||'',service_type:o['service_type']||'',
     plan_date:o['plan_date']||'',plan_dates:o['plan_dates']||'',
     plan_title:o['plan_title']||'',series_title:o['series_title']||'',
     plan_id:o['plan_id']||'',person_name:o['person_name']||'',status:o['status']||'',
@@ -1163,7 +1163,8 @@ function applyPcAttFilters(base){
     if(!dt){g.checkins=0;return;}
     var dk=dt.getFullYear()+'-'+(dt.getMonth()+1)+'-'+dt.getDate();
     g.checkins=g.people.filter(function(p){
-      return ciLookup.has((p.person_name||'').trim().toLowerCase()+'|'+dk);
+      var k=p.person_id||(p.person_name||'').trim().toLowerCase();
+      return ciLookup.has(k+'|'+dk);
     }).length;
   });
   var ciTotal=Object.values(groups).reduce(function(a,g){return a+g.checkins;},0);
