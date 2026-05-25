@@ -273,6 +273,8 @@ function resetTabHeaders(tabName) {
   PropertiesService.getScriptProperties().deleteProperty(HEADER_KEY_PREFIX + tabName);
   Logger.log('Header order reset for tab: ' + tabName);
 }
+function resetSchedulingHeaders()  { resetTabHeaders('Services_Scheduling'); }
+function resetCheckInPeopleHeaders(){ resetTabHeaders('CheckIns_People'); }
 
 // Clears the last-run timestamp. The next pcoPullAll() will do a full fetch
 // of all tabs (except Services_Scheduling, which needs the history script).
