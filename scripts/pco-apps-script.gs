@@ -615,9 +615,8 @@ function upsertTab(ss, name, rows, keyField) {
 // ─── Check-Ins per-person test ────────────────────────────────────────────────
 
 // Run this ONCE to verify per-person check-in access.
-// Fetches the first event, its first period, and logs up to 5 check-in records.
-// Check the Executions log to see what fields come back before committing to a
-// full sync.
+// Uses the most recent event period and tries two endpoint approaches.
+// Check the Executions log to see what fields come back.
 function testCheckInsPeople() {
   const props  = PropertiesService.getScriptProperties();
   const appId  = props.getProperty('PCO_APP_ID');
@@ -625,51 +624,72 @@ function testCheckInsPeople() {
   if (!appId || !secret) throw new Error('Set PCO_APP_ID and PCO_SECRET in Script Properties.');
   const auth = 'Basic ' + Utilities.base64Encode(appId + ':' + secret);
 
-  // Step 1: grab the first event.
-  const evResp = pcoGet(PCO_HOST + '/check-ins/v2/events?per_page=1', auth);
-  const ev = (evResp.data || [])[0];
-  if (!ev) { Logger.log('No events found.'); return; }
-  Logger.log('Event: ' + ev.attributes.name + ' (id ' + ev.id + ')');
+  // Step 1: find the most recently updated event.
+  const evResp = pcoGet(PCO_HOST + '/check-ins/v2/events?per_page=10&order=-updated_at', auth);
+  const events = evResp.data || [];
+  if (!events.length) { Logger.log('No events found.'); return; }
+  Logger.log('Most recent events:');
+  events.forEach(e => Logger.log('  ' + e.id + ' — ' + e.attributes.name));
 
-  // Step 2: grab the first period for that event.
-  const pResp = pcoGet(PCO_HOST + '/check-ins/v2/events/' + ev.id + '/event_periods?per_page=1&order=-starts_at', auth);
-  const period = (pResp.data || [])[0];
-  if (!period) { Logger.log('No periods found for this event.'); return; }
-  Logger.log('Period: ' + period.attributes.starts_at + ' (id ' + period.id + ')');
+  // Use the first (most recently updated) event.
+  const ev = events[0];
+  Logger.log('\nUsing event: ' + ev.attributes.name + ' (id ' + ev.id + ')');
 
-  // Step 3: fetch up to 5 individual check-in records with person included.
-  const ciResp = pcoGet(
-    PCO_HOST + '/check-ins/v2/event_periods/' + period.id + '/check_ins?per_page=5&include=person',
-    auth
+  // Step 2: grab the most recent period for that event.
+  const pResp = pcoGet(
+    PCO_HOST + '/check-ins/v2/events/' + ev.id + '/event_periods?per_page=5&order=-starts_at', auth
   );
+  const periods = pResp.data || [];
+  if (!periods.length) { Logger.log('No periods found for this event.'); return; }
+  Logger.log('Most recent periods:');
+  periods.forEach(p => Logger.log('  ' + p.id + ' — ' + p.attributes.starts_at
+    + '  regular=' + p.attributes.regular_count
+    + ' volunteer=' + p.attributes.volunteer_count));
 
-  Logger.log('Total check-ins in this period: ' + (ciResp.meta && ciResp.meta.total_count));
-  Logger.log('Sample records:');
+  const period = periods[0];
+  Logger.log('\nUsing period: ' + period.attributes.starts_at + ' (id ' + period.id + ')');
 
-  // Build person lookup from included array.
+  // Step 3a: try event_period sub-resource.
+  Logger.log('\n--- Approach A: /event_periods/{id}/check_ins ---');
+  try {
+    const ciResp = pcoGet(
+      PCO_HOST + '/check-ins/v2/event_periods/' + period.id + '/check_ins?per_page=5&include=person',
+      auth
+    );
+    Logger.log('Total in period: ' + (ciResp.meta && ciResp.meta.total_count));
+    logCheckInSample_(ciResp);
+  } catch (e) {
+    Logger.log('Approach A failed: ' + e.message);
+  }
+
+  // Step 3b: try top-level check_ins filtered by event_period_id.
+  Logger.log('\n--- Approach B: /check_ins?where[event_period_id]={id} ---');
+  try {
+    const ciResp2 = pcoGet(
+      PCO_HOST + '/check-ins/v2/check_ins?where[event_period_id]=' + period.id
+        + '&per_page=5&include=person',
+      auth
+    );
+    Logger.log('Total: ' + (ciResp2.meta && ciResp2.meta.total_count));
+    logCheckInSample_(ciResp2);
+  } catch (e) {
+    Logger.log('Approach B failed: ' + e.message);
+  }
+}
+
+function logCheckInSample_(ciResp) {
   const people = {};
   for (const inc of (ciResp.included || [])) {
     if (inc.type === 'Person') {
       people[inc.id] = (inc.attributes.first_name || '') + ' ' + (inc.attributes.last_name || '');
     }
   }
-
   for (const ci of (ciResp.data || [])) {
     const a = ci.attributes;
     const personId = ci.relationships && ci.relationships.person && ci.relationships.person.data
       ? ci.relationships.person.data.id : null;
-    const name = (personId && people[personId]) || a.name || '(guest/anonymous)';
-    Logger.log(JSON.stringify({
-      id:           ci.id,
-      name:         name,
-      kind:         a.kind,
-      checked_in_at: a.created_at,
-      first_time:   a.first_time_guest,
-      medical_notes: a.medical_notes || '',
-      security_code: a.security_code || '',
-      raw_attributes: a,
-    }));
+    const name = (personId && people[personId]) || a.name || '(anonymous)';
+    Logger.log('  id=' + ci.id + ' name=' + name + ' kind=' + a.kind
+      + ' checked_in_at=' + a.created_at + ' attrs=' + JSON.stringify(a));
   }
-
-  Logger.log('Test complete. If you see names and kinds above, per-person pull is working.');
 }
