@@ -353,8 +353,8 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     </div>
     <div class="tbl-card">
       <div class="tbl-toolbar">
-        <select class="fsel" id="pc-fteam" onchange="applyPcAttFilters()"><option value="">All teams</option></select>
         <select class="fsel" id="pc-fdate" onchange="applyPcAttFilters()"><option value="">All dates</option></select>
+        <select class="fsel" id="pc-fteam" onchange="applyPcAttFilters()"><option value="">All teams</option></select>
       </div>
       <table><thead><tr>
         <th id="pca-th-date" onclick="pcaSort('date')">Date</th>
@@ -1169,7 +1169,8 @@ function applyPcAttFilters(base){
   var emEl=document.getElementById('pc-empty');if(emEl)emEl.style.display=rows.length?'none':'block';
   rows.forEach(function(g){
     var tr=document.createElement('tr');tr.className='dr';
-    tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+g.date+'</td>'
+    var gdt=parseDate(g.date);var gdLabel=gdt?MO[gdt.getMonth()]+' '+gdt.getDate()+', '+gdt.getFullYear():g.date;
+    tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+gdLabel+'</td>'
       +'<td style="font-weight:600">'+g.team+'</td>'
       +'<td>'+g.total+'</td>'
       +'<td style="color:var(--green);font-weight:600">'+g.conf+'</td>'
