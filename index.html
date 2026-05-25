@@ -1117,12 +1117,11 @@ function renderPcAttendance(){
   }
   repopulate('pc-fteam',[...new Set(base.map(function(r){return r.team;}).filter(Boolean))].sort());
   var dateOpts=[...new Set(base.map(function(r){return r.plan_date;}).filter(Boolean))]
-    .sort().reverse()
     .map(function(d){
       var dt=parseDate(d);
-      var label=dt?(dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear():d;
-      return{value:d,label:label};
-    });
+      return{value:d,ts:dt?dt.getTime():0,label:dt?(dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear():d};
+    })
+    .sort(function(a,b){return b.ts-a.ts;});
   repopulate('pc-fdate',dateOpts);
   applyPcAttFilters(base);
 }
