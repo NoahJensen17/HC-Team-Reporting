@@ -1195,7 +1195,7 @@ function openPcAttDetail(g){
     var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">';
     html+='<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>';
     if(!hidePos&&p.position&&!yh)html+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
-    if(yh)html+='<div style="font-size:11px;color:var(--purple);font-style:italic">Youth Helper</div>';
+    if(yh&&p.responds_to)html+='<div style="font-size:11px;color:var(--g400)">'+p.responds_to+'</div>';
     if(p.decline_reason)html+='<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>';
     html+='</div><span class="badge '+scls+'">'+p.status+'</span></div>';
     return html;
