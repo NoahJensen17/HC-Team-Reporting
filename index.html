@@ -603,6 +603,11 @@ function parseDate(str){
   if(m2)return new Date(parseInt(m2[1]),parseInt(m2[2])-1,parseInt(m2[3]));
   var d=new Date(str);return isNaN(d.getTime())?null:d;
 }
+function normDate(str){
+  var d=parseDate(str);
+  if(!d)return str||'';
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function getPeriodBounds(gran,offset){
@@ -738,7 +743,7 @@ function mapSched(o,i){
   var shifted=ppRaw&&!/^\d+$/.test(ppRaw);
   if(shifted){
     return{id:i+1,pp_id:'',service_type:o['pp_id']||'',
-      plan_date:o['service_type']||'',plan_dates:o['plan_date']||'',
+      plan_date:normDate(o['service_type']||''),plan_dates:o['plan_date']||'',
       plan_title:o['plan_dates']||'',series_title:o['plan_title']||'',
       plan_id:o['series_title']||'',person_name:o['plan_id']||'',status:o['person_name']||'',
       team:o['status']||'',position:o['team']||'',responds_to:o['position']||'',
@@ -746,7 +751,7 @@ function mapSched(o,i){
       status_updated_at:o['notes']||''};
   }
   return{id:i+1,pp_id:ppRaw,person_id:o['person_id']||'',service_type:o['service_type']||'',
-    plan_date:o['plan_date']||'',plan_dates:o['plan_dates']||'',
+    plan_date:normDate(o['plan_date']||''),plan_dates:o['plan_dates']||'',
     plan_title:o['plan_title']||'',series_title:o['series_title']||'',
     plan_id:o['plan_id']||'',person_name:o['person_name']||'',status:o['status']||'',
     team:o['team']||'',position:o['position']||'',responds_to:o['responds_to']||'',
