@@ -354,14 +354,12 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     </div>
     <div class="tbl-card">
       <div class="tbl-toolbar">
-        <select class="fsel" id="pc-fdate" onchange="applyPcAttFilters()"><option value="">All dates</option></select>
         <select class="fsel" id="pc-fteam" onchange="applyPcAttFilters()"><option value="">All teams</option></select>
       </div>
       <table><thead><tr>
-        <th id="pca-th-date" onclick="pcaSort('date')">Date</th>
         <th id="pca-th-team" onclick="pcaSort('team')">Team</th>
         <th id="pca-th-total" onclick="pcaSort('total')">Scheduled</th>
-        <th style="color:var(--blue2)">Check-ins</th>
+        <th id="pca-th-checkins" onclick="pcaSort('checkins')" style="color:var(--blue2)">Check-ins</th>
         <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
       </tr></thead><tbody id="pc-body"></tbody></table>
       <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
@@ -528,7 +526,8 @@ var G='month', OFF=0;
 var reportData=[], gradsData=[], onboardData=[], schedData=[], checkInPeopleData=[];
 var ciPersonLookup=null;
 var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true}, sSortState={key:'plan_date',asc:true};
-var pcaSortState={key:'date',asc:false};
+var pcaSortState={key:'team',asc:true};
+var pcaModal={g:null,q:null,month:null,date:null,acc:null};
 var loaded=0, pcoLoaded=0;
 var chartBreakdown=null, chartTrend=null, chartDonut=null;
 
@@ -614,6 +613,80 @@ function normDate(str){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ── PC ATTENDANCE HELPERS ────────────────────────────────────────────────
+function pcaDateKey(planDate){var d=parseDate(planDate);return d?d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate():'';}
+function pcaMonthKey(planDate){var d=parseDate(planDate);return d?d.getFullYear()+'-'+(d.getMonth()+1):'';}
+function pcaQtrKey(planDate){var d=parseDate(planDate);return d?d.getFullYear()+'-Q'+(Math.floor(d.getMonth()/3)+1):'';}
+function pcaDateLabel(dk){var p=dk.split('-');if(p.length<3)return dk;return MO[parseInt(p[1])-1].slice(0,3)+' '+p[2];}
+function pcaMonthLabel(mk,yr){var p=mk.split('-');if(p.length<2)return mk;return MO[parseInt(p[1])-1]+(yr?' '+p[0]:'');}
+function pcaQtrLabel(qk,yr){var p=qk.split('-Q');return'Q'+p[1]+(yr?' '+p[0]:'');}
+function pcaGetMonths(dgs){return[...new Set(dgs.map(function(dg){return pcaMonthKey(dg.date);}).filter(Boolean))].sort();}
+function pcaGetQtrs(dgs){return[...new Set(dgs.map(function(dg){return pcaQtrKey(dg.date);}).filter(Boolean))].sort();}
+function pcaAggDG(dgs){return dgs.reduce(function(a,dg){a.total+=dg.total;a.conf+=dg.conf;a.unci+=dg.unci;a.decl+=dg.decl;a.checkins+=dg.checkins;return a;},{total:0,conf:0,unci:0,decl:0,checkins:0});}
+function pcaStatC(lbl,val,col){return'<div class="stat-item"><label>'+lbl+'</label><span style="color:'+col+'">'+val+'</span></div>';}
+function pcaStatsHtml(a){
+  return'<div class="stat-grid" style="margin-bottom:12px">'
+    +stat('Scheduled',a.total||'—')
+    +pcaStatC('Check-ins',a.checkins||'—','var(--blue2)')
+    +pcaStatC('Confirmed',a.conf||'—','var(--green)')
+    +pcaStatC('Unconfirmed',a.unci||'—','var(--amber)')
+    +pcaStatC('Declined',a.decl||'—','var(--red)')
+    +pcaStatC('Rate',a.total?Math.round(a.conf/a.total*100)+'%':'—','var(--blue2)')
+    +'</div>';
+}
+function pcaTabBtn(label,active,fn){
+  return'<button onclick="'+fn+'" style="padding:4px 12px;border-radius:20px;border:none;background:'+(active?'var(--blue2)':'var(--g100)')+';color:'+(active?'#fff':'var(--g600)')+';font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;margin-bottom:4px">'+label+'</button>';
+}
+function pcaIsYH(p){return p.position&&/youth\s*helper/i.test(p.position);}
+function pcaPersonRow(p,hidePos){
+  var scls=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
+  var yh=pcaIsYH(p);
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">';
+  h+='<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>';
+  if(!hidePos&&p.position&&!yh)h+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
+  if(yh&&p.position)h+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
+  if(p.decline_reason)h+='<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>';
+  h+='</div><span class="badge '+scls+'">'+p.status+'</span></div>';
+  return h;
+}
+function pcaSection(lbl,col,people){
+  if(!people.length)return'';
+  return'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+col+';margin:12px 0 6px">'+lbl+' ('+people.length+')</div>'+people.map(function(p){return pcaPersonRow(p,false);}).join('');
+}
+function pcaSortPeople(arr){
+  var ord={Confirmed:0,Unconfirmed:1,Declined:2};
+  return arr.slice().sort(function(a,b){var ao=ord[a.status]!==undefined?ord[a.status]:3,bo=ord[b.status]!==undefined?ord[b.status]:3;return ao-bo||a.person_name.localeCompare(b.person_name);});
+}
+function pcaHCKBody(people){
+  var byPos={},yh=[];
+  people.forEach(function(p){if(pcaIsYH(p)){yh.push(p);return;}var pos=p.position||'Unassigned';if(!byPos[pos])byPos[pos]=[];byPos[pos].push(p);});
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px"><div class="d-sec" style="margin:0">By Subteam</div>'
+    +'<button onclick="toggleAllPcaSubs()" id="pca-expand-btn" style="font-size:11px;font-weight:600;color:var(--blue2);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:4px"><span id="pca-expand-icon">&#9660;</span> Collapse All</button></div>';
+  Object.keys(byPos).sort().forEach(function(pos,idx){
+    var pp=pcaSortPeople(byPos[pos]);
+    var pc=pp.filter(function(p){return p.status==='Confirmed';}).length;
+    var pu=pp.filter(function(p){return p.status==='Unconfirmed';}).length;
+    var pd=pp.filter(function(p){return p.status==='Declined';}).length;
+    var bid='pca-sub-'+idx;
+    h+='<div style="margin-bottom:6px"><div onclick="togglePcaSub(\''+bid+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:var(--rs);background:var(--g100);cursor:pointer;user-select:none">';
+    h+='<span style="display:flex;align-items:center;gap:6px"><span id="'+bid+'-arrow" style="font-size:10px;color:var(--g400)">&#9660;</span>';
+    h+='<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span></span>';
+    h+='<span style="display:flex;gap:10px;font-size:12px;font-weight:600">'+(pc?'<span style="color:var(--green)">&#10003; '+pc+'</span>':'')+(pu?'<span style="color:var(--amber)">? '+pu+'</span>':'')+(pd?'<span style="color:var(--red)">&#10007; '+pd+'</span>':'')+'</span></div>';
+    h+='<div id="'+bid+'" style="margin-top:4px;margin-bottom:8px">'+pp.map(function(p){return pcaPersonRow(p,true);}).join('')+'</div></div>';
+  });
+  if(yh.length){h+='<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--g100)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--purple);margin-bottom:6px">Youth Helpers ('+yh.length+')</div>'+pcaSortPeople(yh).map(function(p){return pcaPersonRow(p,false);}).join('')+'</div>';}
+  return h;
+}
+function pcaPeopleBody(dg){
+  if(!dg||!dg.people.length)return'<div style="color:var(--g300);font-size:13px;font-style:italic;padding:8px 0">No data for this date.</div>';
+  var team=pcaModal.g?pcaModal.g.team:'';
+  if(team==='Hope City Kids')return pcaHCKBody(dg.people);
+  var sp=pcaSortPeople(dg.people);
+  return pcaSection('Confirmed','var(--green)',sp.filter(function(p){return p.status==='Confirmed';}))
+    +pcaSection('Unconfirmed','var(--amber)',sp.filter(function(p){return p.status==='Unconfirmed';}))
+    +pcaSection('Declined','var(--red)',sp.filter(function(p){return p.status==='Declined';}));
+}
 var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function getPeriodBounds(gran,offset){
   var now=new Date(),s,e,label,sh;
@@ -1142,216 +1215,224 @@ function renderAttendance(data){
 }
 function renderPcAttendance(){
   var base=filterSchedByPeriod(schedData,G,OFF);
-  // Populate filter dropdowns, preserving current selection if still valid.
-  function repopulate(id,vals){
-    var el=document.getElementById(id);if(!el)return;
+  var el=document.getElementById('pc-fteam');
+  if(el){
     var cur=el.value;
-    el.innerHTML='<option value="">'+(id==='pc-fteam'?'All teams':'All dates')+'</option>';
-    vals.forEach(function(v){
-      var x=document.createElement('option');
-      x.value=typeof v==='object'?v.value:v;
-      x.textContent=typeof v==='object'?v.label:v;
-      el.appendChild(x);
-    });
-    var rawVals=vals.map(function(v){return typeof v==='object'?v.value:v;});
-    if(rawVals.indexOf(cur)!==-1)el.value=cur;
+    el.innerHTML='<option value="">All teams</option>';
+    [...new Set(base.map(function(r){return(r.team||'').trim();}).filter(Boolean))].sort()
+      .forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;el.appendChild(o);});
+    if([...el.options].some(function(o){return o.value===cur;}))el.value=cur;
   }
-  repopulate('pc-fteam',[...new Set(base.map(function(r){return(r.team||'').trim();}).filter(Boolean))].sort());
-  var dateOpts=[...new Set(base.map(function(r){var d=parseDate(r.plan_date);return d?d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate():'';}).filter(Boolean))]
-    .map(function(d){
-      var dt=parseDate(d);
-      return{value:d,ts:dt?dt.getTime():0,label:dt?(dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear():d};
-    })
-    .sort(function(a,b){return b.ts-a.ts;});
-  repopulate('pc-fdate',dateOpts);
   applyPcAttFilters(base);
 }
 function applyPcAttFilters(base){
   if(!base)base=filterSchedByPeriod(schedData,G,OFF);
   var tm=(document.getElementById('pc-fteam')||{}).value||'';
-  var dt=(document.getElementById('pc-fdate')||{}).value||'';
-  function rDateKey(r){var d=parseDate(r.plan_date);return d?d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate():'';}
-  var sc=base.filter(function(r){return(!tm||(r.team||'').trim()===tm)&&(!dt||rDateKey(r)===dt);});
+  var sc=base.filter(function(r){return!tm||(r.team||'').trim()===tm;});
+
+  // Aggregate summary stats for metric cards
   var total=sc.length;
   var conf=sc.filter(function(r){return r.status==='Confirmed';}).length;
   var unci=sc.filter(function(r){return r.status==='Unconfirmed';}).length;
   var decl=sc.filter(function(r){return r.status==='Declined';}).length;
   setEl('pc-total',total||'—');setEl('pc-conf',conf||'—');setEl('pc-unci',unci||'—');setEl('pc-decl',decl||'—');
   setEl('pc-rate',total?Math.round(conf/total*100)+'%':'—');
-  var groups={};
-  sc.forEach(function(r){
-    var key=rDateKey(r)+'|'+(r.team||'').trim();
-    if(!groups[key])groups[key]={date:r.plan_date,dates:r.plan_dates,team:(r.team||'').trim(),total:0,conf:0,unci:0,decl:0,checkins:0,people:[]};
-    var g=groups[key];g.total++;g.people.push(r);
-    if(r.status==='Confirmed')g.conf++;else if(r.status==='Declined')g.decl++;else g.unci++;
-  });
+
+  // Group by team; each team holds a dateGroups map keyed by date key
+  var teamGroups={};
   var ciLookup=ciPersonLookup||new Set();
-  Object.values(groups).forEach(function(g){
-    var dt=parseDate(g.date);
-    if(!dt){g.checkins=0;return;}
-    var dk=dt.getFullYear()+'-'+(dt.getMonth()+1)+'-'+dt.getDate();
-    g.checkins=g.people.filter(function(p){
-      var k=p.person_id||(p.person_name||'').trim().toLowerCase();
-      return ciLookup.has(k+'|'+dk);
-    }).length;
+  sc.forEach(function(r){
+    var team=(r.team||'').trim();if(!team)return;
+    if(!teamGroups[team])teamGroups[team]={team:team,total:0,conf:0,unci:0,decl:0,checkins:0,dgMap:{}};
+    var tg=teamGroups[team];
+    tg.total++;
+    if(r.status==='Confirmed')tg.conf++;else if(r.status==='Declined')tg.decl++;else tg.unci++;
+    var dk=pcaDateKey(r.plan_date);if(!dk)return;
+    if(!tg.dgMap[dk])tg.dgMap[dk]={dateKey:dk,date:r.plan_date,dates:r.plan_dates,total:0,conf:0,unci:0,decl:0,checkins:0,people:[]};
+    var dg=tg.dgMap[dk];
+    dg.total++;dg.people.push(r);
+    if(r.status==='Confirmed')dg.conf++;else if(r.status==='Declined')dg.decl++;else dg.unci++;
   });
-  var ciTotal=Object.values(groups).reduce(function(a,g){return a+g.checkins;},0);
-  setEl('pc-checkins',ciTotal||'—');
-  function pcaDateVal(d){var p=parseDate(d);return p?p.getTime():0;}
-  var rows=Object.values(groups).sort(function(a,b){
+
+  // Compute per-date check-ins, roll up to team total, sort dateGroups by date
+  Object.values(teamGroups).forEach(function(tg){
+    tg.dateGroups=Object.values(tg.dgMap).sort(function(a,b){
+      var da=parseDate(a.date),db=parseDate(b.date);return(da?da.getTime():0)-(db?db.getTime():0);
+    });
+    delete tg.dgMap;
+    tg.dateGroups.forEach(function(dg){
+      dg.checkins=dg.people.filter(function(p){
+        var k=p.person_id||(p.person_name||'').trim().toLowerCase();
+        return ciLookup.has(k+'|'+dg.dateKey);
+      }).length;
+      tg.checkins+=dg.checkins;
+    });
+  });
+
+  setEl('pc-checkins',Object.values(teamGroups).reduce(function(a,tg){return a+tg.checkins;},0)||'—');
+
+  // Sort teams
+  var rows=Object.values(teamGroups).sort(function(a,b){
     var k=pcaSortState.key,asc=pcaSortState.asc,cmp;
-    if(k==='date')cmp=pcaDateVal(a.date)-pcaDateVal(b.date);
-    else if(k==='total')cmp=a.total-b.total;
-    else cmp=String(a[k]).localeCompare(String(b[k]));
-    if(!asc)cmp=-cmp;
-    if(cmp!==0)return cmp;
-    var tc=k!=='team'?a.team.localeCompare(b.team):0;
-    if(tc!==0)return tc;
-    return k!=='date'?pcaDateVal(b.date)-pcaDateVal(a.date):0;
+    if(k==='total')cmp=a.total-b.total;
+    else if(k==='checkins')cmp=a.checkins-b.checkins;
+    else cmp=a.team.localeCompare(b.team);
+    return asc?cmp:-cmp;
   });
-  // Update header indicators
-  var pcaLabels={date:'Date',team:'Team',total:'Scheduled'};
+
+  // Update sortable header indicators
+  var pcaLabels={team:'Team',total:'Scheduled',checkins:'Check-ins'};
   Object.keys(pcaLabels).forEach(function(k){
     var el=document.getElementById('pca-th-'+k);if(!el)return;
     var active=pcaSortState.key===k;
     el.textContent=pcaLabels[k]+(active?(pcaSortState.asc?' ↑':' ↓'):'');
     el.style.color=active?'var(--blue2)':'';
   });
+
   var tbody=document.getElementById('pc-body');if(!tbody)return;
   tbody.innerHTML='';
   var emEl=document.getElementById('pc-empty');if(emEl)emEl.style.display=rows.length?'none':'block';
-  rows.forEach(function(g){
+  rows.forEach(function(tg){
     var tr=document.createElement('tr');tr.className='dr';
-    var gdt=parseDate(g.date);var gdLabel=gdt?(gdt.getMonth()+1)+'/'+gdt.getDate()+'/'+gdt.getFullYear():g.date;
-    tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+gdLabel+'</td>'
-      +'<td style="font-weight:600">'+g.team+'</td>'
-      +'<td>'+g.total+'</td>'
-      +'<td style="color:var(--blue2)">'+(g.checkins||'—')+'</td>'
-      +'<td style="color:var(--green);font-weight:600">'+g.conf+'</td>'
-      +'<td style="color:var(--amber)">'+g.unci+'</td>'
-      +'<td style="color:var(--red)">'+g.decl+'</td>';
-    (function(grp){tr.onclick=function(){openPcAttDetail(grp);};})(g);
+    tr.innerHTML='<td style="font-weight:600">'+tg.team+'</td>'
+      +'<td>'+tg.total+'</td>'
+      +'<td style="color:var(--blue2)">'+(tg.checkins||'—')+'</td>'
+      +'<td style="color:var(--green);font-weight:600">'+tg.conf+'</td>'
+      +'<td style="color:var(--amber)">'+tg.unci+'</td>'
+      +'<td style="color:var(--red)">'+tg.decl+'</td>';
+    (function(g){tr.onclick=function(){openPcAttDetail(g);};})(tg);
     tbody.appendChild(tr);
   });
 }
+// ── PC ATTENDANCE DRILLDOWN ──────────────────────────────────────────────
 function openPcAttDetail(g){
-  var statusOrder={Confirmed:0,Unconfirmed:1,Declined:2};
-  function sortPeople(arr){
-    return arr.slice().sort(function(a,b){
-      var ao=statusOrder[a.status]!==undefined?statusOrder[a.status]:3;
-      var bo=statusOrder[b.status]!==undefined?statusOrder[b.status]:3;
-      return ao-bo||a.person_name.localeCompare(b.person_name);
-    });
+  pcaModal={g:g,q:null,month:null,date:null,acc:null};
+  // Auto-select sensible defaults so something is always visible on open
+  var dgs=g.dateGroups||[];
+  if(G==='week'||G==='month'){
+    if(dgs.length)pcaModal.date=dgs[0].dateKey;
+  } else if(G==='quarter'){
+    var ms=pcaGetMonths(dgs);
+    if(ms.length){pcaModal.month=ms[0];var md=dgs.filter(function(d){return pcaMonthKey(d.date)===ms[0];});if(md.length)pcaModal.date=md[0].dateKey;}
+  } else if(G==='year'){
+    var qs=pcaGetQtrs(dgs);
+    if(qs.length){pcaModal.q=qs[0];var qd=dgs.filter(function(d){return pcaQtrKey(d.date)===qs[0];});var qms=pcaGetMonths(qd);if(qms.length)pcaModal.month=qms[0];}
   }
-  function isYH(p){return p.position&&/youth\s*helper/i.test(p.position);}
-  function personRow(p,hidePos){
-    var scls=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
-    var yh=isYH(p);
-    var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">';
-    html+='<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>';
-    if(!hidePos&&p.position&&!yh)html+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
-    if(yh&&p.position)html+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
-    if(p.decline_reason)html+='<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>';
-    html+='</div><span class="badge '+scls+'">'+p.status+'</span></div>';
-    return html;
-  }
-  function section(label,color,people){
-    if(!people.length)return'';
-    return'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';margin:12px 0 6px">'+label+' ('+people.length+')</div>'+people.map(function(p){return personRow(p,false);}).join('');
-  }
-  function statC(label,val,color){
-    return'<div class="stat-item"><label>'+label+'</label><span style="color:'+color+'">'+val+'</span></div>';
-  }
-  var html='<div class="d-title">'+g.team+'</div>';
-  html+='<div class="d-sub">'+(g.dates||g.date)+'</div>';
-  html+='<div class="d-sec">Volunteer Breakdown</div>';
-  html+='<div class="stat-grid" style="margin-bottom:12px">';
-  html+=stat('Scheduled',g.total);
-  html+=statC('Check-ins',g.checkins||'—','var(--blue2)');
-  html+=statC('Confirmed',g.conf,'var(--green)');
-  html+=statC('Unconfirmed',g.unci,'var(--amber)');
-  html+=statC('Declined',g.decl,'var(--red)');
-  html+=statC('Confirm Rate',g.total?Math.round(g.conf/g.total*100)+'%':'—','var(--blue2)');
-  html+='</div>';
-  if(g.team==='Hope City Kids'){
-    var byPos={};var youthPeople=[];
-    g.people.forEach(function(p){
-      if(isYH(p)){youthPeople.push(p);return;}
-      var pos=p.position||'Unassigned';
-      if(!byPos[pos])byPos[pos]=[];
-      byPos[pos].push(p);
-    });
-    var posNames=Object.keys(byPos).sort();
-    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">'
-      +'<div class="d-sec" style="margin:0">By Subteam</div>'
-      +'<button onclick="toggleAllPcaSubs()" id="pca-expand-btn" style="font-size:11px;font-weight:600;color:var(--blue2);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:4px"><span id="pca-expand-icon">&#9660;</span> Collapse All</button>'
-      +'</div>';
-    posNames.forEach(function(pos,idx){
-      var people=sortPeople(byPos[pos]);
-      var pc=people.filter(function(p){return p.status==='Confirmed';}).length;
-      var pu=people.filter(function(p){return p.status==='Unconfirmed';}).length;
-      var pd=people.filter(function(p){return p.status==='Declined';}).length;
-      var bodyId='pca-sub-'+idx;
-      html+='<div style="margin-bottom:6px">';
-      html+='<div onclick="togglePcaSub(\''+bodyId+'\')'+'" style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:var(--rs);background:var(--g100);cursor:pointer;user-select:none">';
-      html+='<span style="display:flex;align-items:center;gap:6px">';
-      html+='<span id="'+bodyId+'-arrow" style="font-size:10px;color:var(--g400)">&#9660;</span>';
-      html+='<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+pos+'</span>';
-      html+='</span>';
-      html+='<span style="display:flex;gap:10px;font-size:12px;font-weight:600">';
-      html+=(pc?'<span style="color:var(--green)">&#10003; '+pc+'</span>':'');
-      html+=(pu?'<span style="color:var(--amber)">? '+pu+'</span>':'');
-      html+=(pd?'<span style="color:var(--red)">&#10007; '+pd+'</span>':'');
-      html+='</span></div>';
-      html+='<div id="'+bodyId+'" style="margin-top:4px;margin-bottom:8px">';
-      html+=people.map(function(p){return personRow(p,true);}).join('');
-      html+='</div></div>';
-    });
-    if(youthPeople.length){
-      html+='<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--g100)">';
-      html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--purple);margin-bottom:6px">Youth Helpers ('+youthPeople.length+')</div>';
-      html+=sortPeople(youthPeople).map(function(p){return personRow(p,false);}).join('');
-      html+='</div>';
-    }
-  } else {
-    var sorted=sortPeople(g.people);
-    var conf=sorted.filter(function(p){return p.status==='Confirmed';});
-    var unci=sorted.filter(function(p){return p.status==='Unconfirmed';});
-    var decl=sorted.filter(function(p){return p.status==='Declined';});
-    html+=section('Confirmed','var(--green)',conf);
-    html+=section('Unconfirmed','var(--amber)',unci);
-    html+=section('Declined','var(--red)',decl);
-  }
-  document.getElementById('d-content').innerHTML=html;
+  pcaRenderModal();
   openOv();
 }
+
+function pcaRenderModal(){
+  var g=pcaModal.g;if(!g)return;
+  var b=getPeriodBounds(G,OFF);
+  var h='<div class="d-title">'+g.team+'</div>';
+  h+='<div class="d-sub">'+b.label+'</div>';
+  h+='<div class="d-sec">Period Summary</div>';
+  h+=pcaStatsHtml({total:g.total,conf:g.conf,unci:g.unci,decl:g.decl,checkins:g.checkins});
+  var dgs=g.dateGroups||[];
+  if(!dgs.length){h+='<div style="color:var(--g300);font-size:13px;font-style:italic">No scheduling data.</div>';}
+  else if(G==='week'){
+    // Flatten all people across all date groups (usually just one)
+    var all=dgs.reduce(function(a,dg){return a.concat(dg.people);},[]);
+    var flatDg={people:all,total:all.length,conf:all.filter(function(p){return p.status==='Confirmed';}).length,unci:all.filter(function(p){return p.status==='Unconfirmed';}).length,decl:all.filter(function(p){return p.status==='Declined';}).length,checkins:dgs.reduce(function(a,d){return a+d.checkins;},0)};
+    h+='<div class="d-sec">Volunteers</div>'+pcaPeopleBody(flatDg);
+  } else if(G==='month'){
+    h+=pcaRenderDateTabs(dgs);
+  } else if(G==='quarter'){
+    h+=pcaRenderMonthTabs(dgs,false);
+  } else if(G==='year'){
+    h+=pcaRenderQtrTabs(dgs);
+  }
+  document.getElementById('d-content').innerHTML=h;
+}
+
+function pcaRenderDateTabs(dgs){
+  var selDk=pcaModal.date||(dgs[0]?dgs[0].dateKey:null);
+  var selDg=dgs.find(function(d){return d.dateKey===selDk;})||dgs[0];
+  var h='<div class="d-sec">By Date</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+  dgs.forEach(function(dg){h+=pcaTabBtn(pcaDateLabel(dg.dateKey),dg.dateKey===(selDg?selDg.dateKey:null),'pcaSelDate(\''+dg.dateKey+'\')');});
+  h+='</div>';
+  if(selDg){h+=pcaStatsHtml(selDg);h+=pcaPeopleBody(selDg);}
+  return h;
+}
+
+function pcaRenderMonthTabs(dgs,inYear){
+  var months=pcaGetMonths(dgs);
+  var selMk=pcaModal.month||months[0];
+  var mDgs=dgs.filter(function(d){return pcaMonthKey(d.date)===selMk;});
+  var selDk=pcaModal.date||(mDgs[0]?mDgs[0].dateKey:null);
+  var selDg=mDgs.find(function(d){return d.dateKey===selDk;})||mDgs[0];
+  var h='<div class="d-sec">By Month</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+  months.forEach(function(mk){var magg=pcaAggDG(dgs.filter(function(d){return pcaMonthKey(d.date)===mk;}));h+=pcaTabBtn(pcaMonthLabel(mk,false)+' ('+magg.total+')',mk===selMk,'pcaSelMonth(\''+mk+'\')');});
+  h+='</div>';
+  if(mDgs.length){
+    h+=pcaStatsHtml(pcaAggDG(mDgs));
+    if(!inYear){
+      h+=pcaRenderDateTabs(mDgs);
+    } else {
+      // Year view: accordion rows per date, no further date tabs
+      h+='<div class="d-sec">By Date</div>';
+      mDgs.forEach(function(dg){
+        var open=pcaModal.acc===dg.dateKey;
+        h+='<div onclick="pcaToggleAcc(\''+dg.dateKey+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px;cursor:pointer">';
+        h+='<span style="font-weight:600;font-size:13px">'+pcaDateLabel(dg.dateKey)+'</span>';
+        h+='<span style="display:flex;gap:8px;font-size:12px;align-items:center">';
+        h+='<span>'+dg.total+' sched</span>';
+        h+='<span style="color:var(--blue2)">'+dg.checkins+' in</span>';
+        h+='<span style="color:var(--green)">'+dg.conf+' conf</span>';
+        if(dg.unci)h+='<span style="color:var(--amber)">'+dg.unci+' unci</span>';
+        if(dg.decl)h+='<span style="color:var(--red)">'+dg.decl+' decl</span>';
+        h+='</span>';
+        h+='<span style="color:var(--g400);font-size:10px">'+(open?'&#9660;':'&#9654;')+'</span>';
+        h+='</div>';
+        if(open)h+='<div style="padding:4px 0 8px 8px">'+pcaPeopleBody(dg)+'</div>';
+      });
+    }
+  }
+  return h;
+}
+
+function pcaRenderQtrTabs(dgs){
+  var qtrs=pcaGetQtrs(dgs);
+  var selQ=pcaModal.q||qtrs[0];
+  var qDgs=dgs.filter(function(d){return pcaQtrKey(d.date)===selQ;});
+  var h='<div class="d-sec">By Quarter</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+  qtrs.forEach(function(qk){var qagg=pcaAggDG(dgs.filter(function(d){return pcaQtrKey(d.date)===qk;}));h+=pcaTabBtn(pcaQtrLabel(qk,false)+' ('+qagg.total+')',qk===selQ,'pcaSelQ(\''+qk+'\')');});
+  h+='</div>';
+  if(qDgs.length){h+=pcaStatsHtml(pcaAggDG(qDgs));h+=pcaRenderMonthTabs(qDgs,true);}
+  return h;
+}
+
+// Navigation callbacks (called from inline onclick)
+function pcaSelDate(dk){pcaModal.date=dk;pcaRenderModal();}
+function pcaSelMonth(mk){pcaModal.month=mk;pcaModal.date=null;pcaModal.acc=null;
+  // Auto-select first date in new month for quarter view
+  if(G==='quarter'&&pcaModal.g){var md=(pcaModal.g.dateGroups||[]).filter(function(d){return pcaMonthKey(d.date)===mk;});if(md.length)pcaModal.date=md[0].dateKey;}
+  pcaRenderModal();}
+function pcaSelQ(qk){pcaModal.q=qk;pcaModal.acc=null;
+  // Auto-select first month in new quarter
+  if(pcaModal.g){var qd=(pcaModal.g.dateGroups||[]).filter(function(d){return pcaQtrKey(d.date)===qk;});var ms=pcaGetMonths(qd);pcaModal.month=ms[0]||null;}
+  pcaModal.date=null;pcaRenderModal();}
+function pcaToggleAcc(dk){pcaModal.acc=pcaModal.acc===dk?null:dk;pcaRenderModal();}
+
 function togglePcaSub(id){
-  var body=document.getElementById(id);
-  var arrow=document.getElementById(id+'-arrow');
-  if(!body)return;
+  var body=document.getElementById(id),arrow=document.getElementById(id+'-arrow');if(!body)return;
   var open=body.style.display!=='none';
   body.style.display=open?'none':'block';
   if(arrow)arrow.innerHTML=open?'&#9654;':'&#9660;';
 }
 function toggleAllPcaSubs(){
-  var btn=document.getElementById('pca-expand-btn');
-  var icon=document.getElementById('pca-expand-icon');
-  if(!btn)return;
+  var btn=document.getElementById('pca-expand-btn');if(!btn)return;
   var collapsing=btn.textContent.trim().indexOf('Collapse')!==-1;
-  var i=0;
-  while(true){
-    var body=document.getElementById('pca-sub-'+i);
-    var arrow=document.getElementById('pca-sub-'+i+'-arrow');
-    if(!body)break;
-    body.style.display=collapsing?'none':'block';
-    if(arrow)arrow.innerHTML=collapsing?'&#9654;':'&#9660;';
-    i++;
-  }
+  var i=0;while(true){var body=document.getElementById('pca-sub-'+i),arrow=document.getElementById('pca-sub-'+i+'-arrow');if(!body)break;body.style.display=collapsing?'none':'block';if(arrow)arrow.innerHTML=collapsing?'&#9654;':'&#9660;';i++;}
   btn.innerHTML='<span id="pca-expand-icon">'+(collapsing?'&#9650;':'&#9660;')+'</span> '+(collapsing?'Expand All':'Collapse All');
 }
 function pcaSort(key){
-  if(pcaSortState.key===key){pcaSortState.asc=!pcaSortState.asc;}
-  else{pcaSortState.key=key;pcaSortState.asc=(key==='team');}
+  pcaSortState.asc=pcaSortState.key===key?!pcaSortState.asc:(key==='team');
+  pcaSortState.key=key;
   applyPcAttFilters();
 }
 function renderGuests(data){
