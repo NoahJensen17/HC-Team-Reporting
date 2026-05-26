@@ -120,6 +120,18 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .srch svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none}
 .fsel{border:1px solid var(--g200);border-radius:var(--rs);padding:7px 9px;font-size:12px;color:var(--g700);background:var(--g50);outline:none;cursor:pointer;font-family:inherit}
 .fsel:focus{border-color:var(--blue);background:#fff}
+.ta-wrap{position:relative;display:inline-block}
+.ta-inp{width:160px;padding-right:22px;cursor:text}
+.ta-inp::placeholder{color:var(--g400)}
+.ta-chev{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--g400);font-size:9px;pointer-events:none;transition:transform .15s}
+.ta-chev.open{transform:translateY(-50%) rotate(180deg)}
+.ta-drop{position:absolute;top:calc(100% + 3px);left:0;min-width:100%;background:#fff;border:1px solid var(--g200);border-radius:var(--rs);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:400;max-height:220px;overflow-y:auto;display:none}
+.ta-drop.open{display:block}
+.ta-opt{padding:7px 10px;font-size:12px;color:var(--g700);cursor:pointer}
+.ta-opt:hover{background:var(--g50)}
+.ta-opt.ta-sel{background:var(--purplef);color:var(--purple);font-weight:600}
+.ta-opt.ta-dim{color:var(--g400);font-style:italic}
+.ta-none{padding:7px 10px;font-size:12px;color:var(--g300);font-style:italic}
 table{width:100%;border-collapse:collapse}
 thead tr{background:var(--g50)}
 th{padding:9px 13px;text-align:left;font-size:10px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--g200);white-space:nowrap;cursor:pointer;user-select:none}
@@ -355,7 +367,13 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     </div>
     <div class="tbl-card">
       <div class="tbl-toolbar">
-        <select class="fsel" id="pc-fteam" onchange="applyPcAttFilters()"><option value="">All teams</option></select>
+        <div class="ta-wrap" id="pc-fteam-wrap">
+          <input class="fsel ta-inp" id="pc-fteam-inp" type="text" placeholder="All teams" autocomplete="off"
+            onfocus="pcaTA_onFocus()" oninput="pcaTA_onInput(this.value)"
+            onblur="pcaTA_onBlur()" onkeydown="pcaTA_onKey(event)">
+          <span class="ta-chev" id="pc-fteam-chev">&#9660;</span>
+          <div class="ta-drop" id="pc-fteam-list"></div>
+        </div>
       </div>
       <table><thead><tr>
         <th id="pca-th-team" onclick="pcaSort('team')">Team</th>
@@ -1224,21 +1242,71 @@ function renderAttendance(data){
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
   });
 }
+// ── TEAM TYPEAHEAD ────────────────────────────────────────────────────────
+var pcaTA={opts:[],sel:'',isOpen:false};
+function pcaTA_init(teams){
+  pcaTA.opts=teams;
+  if(pcaTA.sel&&teams.indexOf(pcaTA.sel)===-1)pcaTA.sel='';
+  var inp=document.getElementById('pc-fteam-inp');
+  if(inp)inp.value=pcaTA.sel;
+}
+function pcaTA_renderList(q){
+  var list=document.getElementById('pc-fteam-list');if(!list)return;
+  var lq=(q||'').toLowerCase();
+  var matches=pcaTA.opts.filter(function(t){return!lq||t.toLowerCase().includes(lq);});
+  var h='<div class="ta-opt ta-dim" onmousedown="event.preventDefault();pcaTA_select(\'\')">All teams</div>';
+  if(!matches.length){h+='<div class="ta-none">No teams match</div>';}
+  else{matches.forEach(function(t){h+='<div class="ta-opt'+(t===pcaTA.sel?' ta-sel':'')+'" onmousedown="event.preventDefault();pcaTA_select(\''+t.replace(/'/g,'&#39;')+'\')">'+t+'</div>';});}
+  list.innerHTML=h;
+}
+function pcaTA_setOpen(open){
+  pcaTA.isOpen=open;
+  var list=document.getElementById('pc-fteam-list');
+  var chev=document.getElementById('pc-fteam-chev');
+  if(list)list.className='ta-drop'+(open?' open':'');
+  if(chev)chev.className='ta-chev'+(open?' open':'');
+}
+function pcaTA_select(val){
+  pcaTA.sel=val;
+  var inp=document.getElementById('pc-fteam-inp');
+  if(inp)inp.value=val;
+  pcaTA_setOpen(false);
+  applyPcAttFilters();
+}
+function pcaTA_onFocus(){
+  var inp=document.getElementById('pc-fteam-inp');
+  if(inp)inp.select();
+  pcaTA_renderList('');
+  pcaTA_setOpen(true);
+}
+function pcaTA_onInput(q){
+  pcaTA_renderList(q);
+  pcaTA_setOpen(true);
+}
+function pcaTA_onBlur(){
+  setTimeout(function(){
+    pcaTA_setOpen(false);
+    var inp=document.getElementById('pc-fteam-inp');
+    if(inp)inp.value=pcaTA.sel;
+  },160);
+}
+function pcaTA_onKey(e){
+  if(e.key==='Escape'){pcaTA_select('');}
+  else if(e.key==='Enter'){
+    var first=document.querySelector('#pc-fteam-list .ta-opt:not(.ta-dim)');
+    if(first)first.dispatchEvent(new MouseEvent('mousedown'));
+  }
+}
+
 function renderPcAttendance(){
   var base=filterSchedByPeriod(schedData,G,OFF);
-  var el=document.getElementById('pc-fteam');
-  if(el){
-    var cur=el.value;
-    el.innerHTML='<option value="">All teams</option>';
-    [...new Set(base.map(function(r){return(r.team||'').trim();}).filter(Boolean))].sort()
-      .forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;el.appendChild(o);});
-    if([...el.options].some(function(o){return o.value===cur;}))el.value=cur;
-  }
+  var teams=[...new Set(base.map(function(r){return(r.team||'').trim();}).filter(Boolean))].sort();
+  pcaTA_init(teams);
   applyPcAttFilters(base);
 }
 function applyPcAttFilters(base){
   if(!base)base=filterSchedByPeriod(schedData,G,OFF);
-  var tm=(document.getElementById('pc-fteam')||{}).value||'';
+  var tm=pcaTA.sel||'';
   var sc=base.filter(function(r){return!tm||(r.team||'').trim()===tm;});
 
   // Aggregate summary stats for metric cards
