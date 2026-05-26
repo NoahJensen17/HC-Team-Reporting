@@ -167,6 +167,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 .d-title{font-size:19px;font-weight:700;color:var(--g800);margin-bottom:3px}
 .d-sub{font-size:13px;color:var(--g400);margin-bottom:18px}
 .d-sec{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin:18px 0 8px;border-bottom:1px solid var(--g100);padding-bottom:5px}
+.d-sec-hd{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--g900);margin:18px 0 8px;border-bottom:2px solid var(--g300);padding-bottom:5px}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .stat-item label{font-size:10px;color:var(--g400);display:block;margin-bottom:2px;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
 .stat-item span{font-size:14px;font-weight:600;color:var(--g800)}
@@ -1326,8 +1327,9 @@ function pcaRenderModal(){
   var g=pcaModal.g;if(!g)return;
   var b=getPeriodBounds(G,OFF);
   var h='<div class="d-title">'+g.team+'</div>';
+  var granLabel={week:'Week',month:'Month',quarter:'Quarter',year:'Year'}[G]||'Period';
   h+='<div class="d-sub">'+b.label+'</div>';
-  h+='<div class="d-sec">Period Summary</div>';
+  h+='<div class="d-sec-hd">'+granLabel+' Summary</div>';
   h+=pcaStatsHtml({total:g.total,conf:g.conf,unci:g.unci,decl:g.decl,checkins:g.checkins});
   var dgs=g.dateGroups||[];
   if(!dgs.length){h+='<div style="color:var(--g300);font-size:13px;font-style:italic">No scheduling data.</div>';}
@@ -1335,7 +1337,7 @@ function pcaRenderModal(){
     // Flatten all people across all date groups (usually just one)
     var all=dgs.reduce(function(a,dg){return a.concat(dg.people);},[]);
     var flatDg={people:all,total:all.length,conf:all.filter(function(p){return p.status==='Confirmed';}).length,unci:all.filter(function(p){return p.status==='Unconfirmed';}).length,decl:all.filter(function(p){return p.status==='Declined';}).length,checkins:dgs.reduce(function(a,d){return a+d.checkins;},0)};
-    h+='<div class="d-sec">Volunteers</div>'+pcaPeopleBody(flatDg);
+    h+='<div class="d-sec-hd">Volunteers</div>'+pcaPeopleBody(flatDg);
   } else if(G==='month'){
     h+=pcaRenderDateTabs(dgs);
   } else if(G==='quarter'){
@@ -1349,7 +1351,7 @@ function pcaRenderModal(){
 function pcaRenderDateTabs(dgs){
   var selDk=pcaModal.date||(dgs[0]?dgs[0].dateKey:null);
   var selDg=dgs.find(function(d){return d.dateKey===selDk;})||dgs[0];
-  var h='<div class="d-sec">By Date</div>';
+  var h='<div class="d-sec-hd">By Date</div>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
   dgs.forEach(function(dg){h+=pcaTabBtn(pcaDateLabel(dg.dateKey),dg.dateKey===(selDg?selDg.dateKey:null),'pcaSelDate(\''+dg.dateKey+'\')');});
   h+='</div>';
@@ -1363,7 +1365,7 @@ function pcaRenderMonthTabs(dgs,inYear){
   var mDgs=dgs.filter(function(d){return pcaMonthKey(d.date)===selMk;});
   var selDk=pcaModal.date||(mDgs[0]?mDgs[0].dateKey:null);
   var selDg=mDgs.find(function(d){return d.dateKey===selDk;})||mDgs[0];
-  var h='<div class="d-sec">By Month</div>';
+  var h='<div class="d-sec-hd">By Month</div>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
   months.forEach(function(mk){var magg=pcaAggDG(dgs.filter(function(d){return pcaMonthKey(d.date)===mk;}));h+=pcaTabBtn(pcaMonthLabel(mk,false)+' ('+magg.total+')',mk===selMk,'pcaSelMonth(\''+mk+'\')');});
   h+='</div>';
@@ -1373,7 +1375,7 @@ function pcaRenderMonthTabs(dgs,inYear){
       h+=pcaRenderDateTabs(mDgs);
     } else {
       // Year view: accordion rows per date, no further date tabs
-      h+='<div class="d-sec">By Date</div>';
+      h+='<div class="d-sec-hd">By Date</div>';
       mDgs.forEach(function(dg){
         var open=pcaModal.acc===dg.dateKey;
         h+='<div onclick="pcaToggleAcc(\''+dg.dateKey+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px;cursor:pointer">';
@@ -1398,7 +1400,7 @@ function pcaRenderQtrTabs(dgs){
   var qtrs=pcaGetQtrs(dgs);
   var selQ=pcaModal.q||qtrs[0];
   var qDgs=dgs.filter(function(d){return pcaQtrKey(d.date)===selQ;});
-  var h='<div class="d-sec">By Quarter</div>';
+  var h='<div class="d-sec-hd">By Quarter</div>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
   qtrs.forEach(function(qk){var qagg=pcaAggDG(dgs.filter(function(d){return pcaQtrKey(d.date)===qk;}));h+=pcaTabBtn(pcaQtrLabel(qk,false)+' ('+qagg.total+')',qk===selQ,'pcaSelQ(\''+qk+'\')');});
   h+='</div>';
