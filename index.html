@@ -265,7 +265,6 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     <button class="nav-tab active" onclick="switchSection('glance')">Month at a Glance</button>
     <button class="nav-tab" onclick="switchSection('reports')">Team Reporting</button>
     <button class="nav-tab" onclick="switchSection('onboarding')">Onboarding</button>
-    <button class="nav-tab" onclick="switchSection('scheduling')">Scheduling</button>
   </div>
 </nav>
 
@@ -487,39 +486,6 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 </div>
 
 <!-- SECTION: Scheduling -->
-<div class="sec" id="sec-scheduling">
-<div class="page">
-  <div class="metrics">
-    <div class="mcard"><div class="mc-lbl">Confirmed</div><div class="mc-val cg" id="s-conf">—</div></div>
-    <div class="mcard"><div class="mc-lbl">Unconfirmed</div><div class="mc-val ca" id="s-unci">—</div></div>
-    <div class="mcard"><div class="mc-lbl">Declined</div><div class="mc-val cr" id="s-decl">—</div></div>
-    <div class="mcard"><div class="mc-lbl">Church Check-ins</div><div class="mc-val cb" id="s-ci">—</div></div>
-  </div>
-  <div class="tbl-card">
-    <div class="tbl-toolbar">
-      <div class="srch"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="s-search" placeholder="Name or team…" oninput="applySchedFilters()"></div>
-      <select class="fsel" id="s-team" onchange="applySchedFilters()"><option value="">All teams</option></select>
-      <select class="fsel" id="s-stype" onchange="applySchedFilters()"><option value="">All service types</option></select>
-      <select class="fsel" id="s-status" onchange="applySchedFilters()">
-        <option value="">All statuses</option>
-        <option value="Confirmed">Confirmed</option>
-        <option value="Unconfirmed">Unconfirmed</option>
-        <option value="Declined">Declined</option>
-      </select>
-    </div>
-    <div class="loading" id="s-loading"><div class="lds"></div><br>Loading…</div>
-    <table id="s-table" style="display:none"><thead><tr>
-      <th onclick="sSort('plan_date')">Date</th>
-      <th onclick="sSort('service_type')" class="hide-sm">Service Type</th>
-      <th onclick="sSort('team')">Team</th>
-      <th onclick="sSort('person_name')">Person</th>
-      <th onclick="sSort('position')" class="hide-sm">Position</th>
-      <th onclick="sSort('status')">Status</th>
-    </tr></thead><tbody id="s-body"></tbody></table>
-    <div class="empty" id="s-empty" style="display:none">No assignments match filters.</div>
-  </div>
-</div>
-</div>
 
 <!-- Detail Overlay -->
 <div class="overlay" id="overlay" onclick="closeOverlay(event)">
@@ -544,7 +510,7 @@ var TAB_CHECKINS_PEOPLE='CheckIns_People';
 var G='month', OFF=0;
 var reportData=[], gradsData=[], onboardData=[], schedData=[], checkInPeopleData=[];
 var ciPersonLookup=null;
-var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true}, sSortState={key:'plan_date',asc:true};
+var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true};
 var pcaSortState={key:'team',asc:true};
 var pcaModal={g:null,q:null,month:null,date:null,acc:null};
 var loaded=0, pcoLoaded=0;
@@ -914,18 +880,13 @@ function onDataLoaded(){
 function onPcoDataLoaded(){
   pcoLoaded++;
   if(pcoLoaded<2)return;
-  document.getElementById('s-loading').style.display='none';
-  document.getElementById('s-table').style.display='';
-  fillSelect('s-team',uniq(schedData,'team'));
-  fillSelect('s-stype',[...new Set(schedData.map(function(d){return d.service_type;}).filter(Boolean))].sort());
-  if(loaded>=3)renderScheduling();
+  if(loaded>=3)renderAll();
 }
 function renderAll(){
   renderPeriodLabel();
   renderGlance();
   applyReportFilters();
   renderOnboarding();
-  if(pcoLoaded>=2)renderScheduling();
 }
 
 // ── PERIOD NAVIGATION ────────────────────────────────────────────────────
@@ -1715,58 +1676,17 @@ function filterSchedByPeriod(data,gran,off){
   var b=getPeriodBounds(gran,off);
   return data.filter(function(r){var d=parseDate(r.plan_date);return d&&d>=b.start&&d<=b.end;});
 }
-function renderScheduling(){
-  var b=getPeriodBounds(G,OFF);
-  var ciP=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=b.start&&d<=b.end;});
-  var sc=filterSchedByPeriod(schedData,G,OFF);
-  setEl('s-conf',sc.filter(function(r){return r.status==='Confirmed';}).length);
-  setEl('s-unci',sc.filter(function(r){return r.status==='Unconfirmed';}).length);
-  setEl('s-decl',sc.filter(function(r){return r.status==='Declined';}).length);
-  setEl('s-ci',ciP.length);
-  applySchedFilters();
-}
-function applySchedFilters(){
-  var q=(document.getElementById('s-search')||{}).value||'';q=q.toLowerCase();
-  var tm=(document.getElementById('s-team')||{}).value||'';
-  var st=(document.getElementById('s-stype')||{}).value||'';
-  var ss=(document.getElementById('s-status')||{}).value||'';
-  var base=filterSchedByPeriod(schedData,G,OFF);
-  var f=base.filter(function(r){
-    return(!q||r.person_name.toLowerCase().includes(q)||r.team.toLowerCase().includes(q))
-      &&(!tm||r.team===tm)&&(!st||r.service_type===st)&&(!ss||r.status===ss);
-  });
-  renderSchedTable(f);
-}
-function renderSchedTable(data){
-  var sorted=sortArr(data,sSortState.key,sSortState.asc);
-  var tbody=document.getElementById('s-body');if(!tbody)return;
-  tbody.innerHTML='';
-  document.getElementById('s-empty').style.display=sorted.length?'none':'block';
-  sorted.forEach(function(d){
-    var scls=d.status==='Confirmed'?'by':d.status==='Declined'?'bn':'bf';
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td style="font-size:12px;white-space:nowrap">'+d.plan_date+'</td>'
-      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+d.service_type+'</td>'
-      +'<td style="font-weight:600">'+d.team+'</td>'
-      +'<td>'+d.person_name+'</td>'
-      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+d.position+'</td>'
-      +'<td><span class="badge '+scls+'">'+d.status+'</span></td>';
-    tbody.appendChild(tr);
-  });
-}
-function sSort(key){sSortState.asc=sSortState.key===key?!sSortState.asc:true;sSortState.key=key;applySchedFilters();}
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 function switchSection(name){
   document.querySelectorAll('.nav-tab').forEach(function(b,i){
-    b.classList.toggle('active',['glance','reports','onboarding','scheduling'][i]===name);
+    b.classList.toggle('active',['glance','reports','onboarding'][i]===name);
   });
   document.querySelectorAll('.sec').forEach(function(p){
     p.classList.toggle('active',p.id==='sec-'+name);
   });
   document.getElementById('period-bar').style.display=name==='onboarding'?'none':'';
   if(name==='reports')applyReportFilters();
-  if(name==='scheduling'&&pcoLoaded>=2)renderScheduling();
 }
 function switchTab(prefix,name){
   var ids=prefix==='r'?['attendance','pcattendance','guests','flags']:['pipeline','tracker','grads'];
