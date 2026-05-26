@@ -360,7 +360,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <table><thead><tr>
         <th id="pca-th-team" onclick="pcaSort('team')">Team</th>
         <th id="pca-th-total" onclick="pcaSort('total')">Scheduled</th>
-        <th id="pca-th-checkins" onclick="pcaSort('checkins')" style="color:var(--blue2)">Check-ins</th>
+        <th id="pca-th-checkins" onclick="pcaSort('checkins')" style="color:var(--purple)">Check-ins</th>
         <th>Confirmed</th><th>Unconfirmed</th><th>Declined</th>
       </tr></thead><tbody id="pc-body"></tbody></table>
       <div class="empty" id="pc-empty" style="display:none">No scheduling data for this period.</div>
@@ -629,7 +629,7 @@ function pcaStatC(lbl,val,col){return'<div class="stat-item"><label>'+lbl+'</lab
 function pcaStatsHtml(a){
   return'<div class="stat-grid" style="margin-bottom:12px">'
     +stat('Scheduled',a.total||'—')
-    +pcaStatC('Check-ins',a.checkins||'—','var(--blue2)')
+    +pcaStatC('Check-ins',a.checkins||'—','var(--purple)')
     +pcaStatC('Confirmed',a.conf||'—','var(--green)')
     +pcaStatC('Unconfirmed',a.unci||'—','var(--amber)')
     +pcaStatC('Declined',a.decl||'—','var(--red)')
@@ -640,15 +640,25 @@ function pcaTabBtn(label,active,fn){
   return'<button onclick="'+fn+'" style="padding:4px 12px;border-radius:20px;border:none;background:'+(active?'var(--blue2)':'var(--g100)')+';color:'+(active?'#fff':'var(--g600)')+';font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;margin-bottom:4px">'+label+'</button>';
 }
 function pcaIsYH(p){return p.position&&/youth\s*helper/i.test(p.position);}
+function pcaIsCheckedIn(p){
+  if(!ciPersonLookup)return false;
+  var dk=pcaDateKey(p.plan_date);if(!dk)return false;
+  var k=p.person_id||(p.person_name||'').trim().toLowerCase();
+  return!!k&&ciPersonLookup.has(k+'|'+dk);
+}
 function pcaPersonRow(p,hidePos){
   var scls=p.status==='Confirmed'?'by':p.status==='Declined'?'bn':'bf';
   var yh=pcaIsYH(p);
+  var ci=pcaIsCheckedIn(p);
   var h='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--rs);background:var(--g50);margin-bottom:4px">';
+  h+='<div style="display:flex;align-items:center;gap:7px">';
+  h+='<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:'+(ci?'var(--purple)':'transparent')+'"></div>';
   h+='<div><div style="font-weight:600;font-size:13px">'+p.person_name+'</div>';
   if(!hidePos&&p.position&&!yh)h+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
   if(yh&&p.position)h+='<div style="font-size:11px;color:var(--g400)">'+p.position+'</div>';
   if(p.decline_reason)h+='<div style="font-size:11px;color:var(--red);margin-top:2px">Reason: '+p.decline_reason+'</div>';
-  h+='</div><span class="badge '+scls+'">'+p.status+'</span></div>';
+  h+='</div></div>';
+  h+='<span class="badge '+scls+'">'+p.status+'</span></div>';
   return h;
 }
 function pcaSection(lbl,col,people){
@@ -1297,7 +1307,7 @@ function applyPcAttFilters(base){
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-weight:600">'+tg.team+'</td>'
       +'<td>'+tg.total+'</td>'
-      +'<td style="color:var(--blue2)">'+(tg.checkins||'—')+'</td>'
+      +'<td style="color:var(--purple)">'+(tg.checkins||'—')+'</td>'
       +'<td style="color:var(--green);font-weight:600">'+tg.conf+'</td>'
       +'<td style="color:var(--amber)">'+tg.unci+'</td>'
       +'<td style="color:var(--red)">'+tg.decl+'</td>';
@@ -1382,7 +1392,7 @@ function pcaRenderMonthTabs(dgs,inYear){
         h+='<span style="font-weight:600;font-size:13px">'+pcaDateLabel(dg.dateKey)+'</span>';
         h+='<span style="display:flex;gap:8px;font-size:12px;align-items:center">';
         h+='<span>'+dg.total+' sched</span>';
-        h+='<span style="color:var(--blue2)">'+dg.checkins+' in</span>';
+        h+='<span style="color:var(--purple)">'+dg.checkins+' in</span>';
         h+='<span style="color:var(--green)">'+dg.conf+' conf</span>';
         if(dg.unci)h+='<span style="color:var(--amber)">'+dg.unci+' unci</span>';
         if(dg.decl)h+='<span style="color:var(--red)">'+dg.decl+' decl</span>';
