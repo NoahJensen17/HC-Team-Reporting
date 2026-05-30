@@ -389,13 +389,14 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
       <div class="mcard"><div class="mc-lbl">Cards In</div><div class="mc-val cb" id="gg-cin">—</div></div>
       <div class="mcard"><div class="mc-lbl">Entered in PC</div><div class="mc-val cg" id="gg-cpc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Sign-Ups</div><div class="mc-val ca" id="gg-su">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Live Stream</div><div class="mc-val cb" id="gg-ls">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Prayer Requests</div><div class="mc-val cp" id="gg-pray">—</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:16px">
       <div class="mcard"><div class="mc-lbl">Follow-ups</div><div class="mc-val ca" id="f-fu">—</div></div>
       <div class="mcard"><div class="mc-lbl">Incidents</div><div class="mc-val cr" id="f-inc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Tech Issues</div><div class="mc-val cb" id="f-tch">—</div></div>
       <div class="mcard"><div class="mc-lbl">Building Repairs</div><div class="mc-val ca" id="f-bld">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Live Stream</div><div class="mc-val cb" id="gg-ls">—</div></div>
     </div>
     <div id="flags-list"></div>
   </div>
@@ -1465,9 +1466,12 @@ function pcaSort(key){
   pcaSortState.key=key;
   applyPcAttFilters();
 }
+function prayerCount(text){var m=(text||'').match(/(\d+)\s*\(?\s*prayer\s*requests?\b/i);return m?parseInt(m[1]):0;}
 function renderRFlags(data){
   setEl('gg-gst',sum(data,'firstTimeGuests'));setEl('gg-cin',sum(data,'connectCards'));
   setEl('gg-cpc',sum(data,'connectEntered'));setEl('gg-su',sum(data,'signUps'));setEl('gg-ls',sum(data,'liveStream'));
+  var pray=data.reduce(function(a,d){return a+prayerCount(d.followUp)+prayerCount(d.followUp2);},0);
+  setEl('gg-pray',pray||'—');
   setEl('f-fu',data.filter(function(d){return hasContent(d.followUp)||hasContent(d.followUp2);}).length);
   setEl('f-inc',data.filter(function(d){return hasContent(d.incidents);}).length);
   setEl('f-tch',data.filter(function(d){return hasContent(d.techIssues);}).length);
