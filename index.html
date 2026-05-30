@@ -384,12 +384,14 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 
   <!-- Guests & Follow-ups -->
   <div class="tab-panel" id="r-flags">
-    <div class="metrics">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:11px">
       <div class="mcard"><div class="mc-lbl">First-Time Guests</div><div class="mc-val cp" id="gg-gst">—</div></div>
       <div class="mcard"><div class="mc-lbl">Cards In</div><div class="mc-val cb" id="gg-cin">—</div></div>
       <div class="mcard"><div class="mc-lbl">Entered in PC</div><div class="mc-val cg" id="gg-cpc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Sign-Ups</div><div class="mc-val ca" id="gg-su">—</div></div>
       <div class="mcard"><div class="mc-lbl">Live Stream</div><div class="mc-val cb" id="gg-ls">—</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px">
       <div class="mcard"><div class="mc-lbl">Follow-ups</div><div class="mc-val ca" id="f-fu">—</div></div>
       <div class="mcard"><div class="mc-lbl">Incidents</div><div class="mc-val cr" id="f-inc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Tech Issues</div><div class="mc-val cb" id="f-tch">—</div></div>
