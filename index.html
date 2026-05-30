@@ -1195,11 +1195,11 @@ function renderAttendance(data){
   setEl('a-act',sum(data,'totalActive'));
   var tbody=document.getElementById('a-body');tbody.innerHTML='';
   [...data].sort(function(a,b){var da=parseDate(a.date),db=parseDate(b.date);return(db?db.getTime():0)-(da?da.getTime():0);}).forEach(function(d){
-    var tr=document.createElement('tr');tr.className='dr';
+    var tr=document.createElement('tr');
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'
       +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td>';
-    tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
+    tbody.appendChild(tr);
   });
 }
 // ── TEAM TYPEAHEAD ────────────────────────────────────────────────────────
