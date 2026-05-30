@@ -333,8 +333,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   <div class="tabs-nav">
     <button class="tab-btn active" data-rtab="attendance" onclick="switchTab('r','attendance')">Reported Attendance</button>
     <button class="tab-btn" data-rtab="pcattendance" onclick="switchTab('r','pcattendance')">PC Attendance</button>
-    <button class="tab-btn" data-rtab="guests" onclick="switchTab('r','guests')">Guests &amp; Engagement</button>
-    <button class="tab-btn" data-rtab="flags" onclick="switchTab('r','flags')">Flags &amp; Follow-ups</button>
+    <button class="tab-btn" data-rtab="flags" onclick="switchTab('r','flags')">Guests &amp; Follow-ups</button>
   </div>
 
   <!-- Reported Attendance -->
@@ -383,25 +382,14 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     </div>
   </div>
 
-  <!-- Guests -->
-  <div class="tab-panel" id="r-guests">
+  <!-- Guests & Follow-ups -->
+  <div class="tab-panel" id="r-flags">
     <div class="metrics">
       <div class="mcard"><div class="mc-lbl">First-Time Guests</div><div class="mc-val cp" id="gg-gst">—</div></div>
       <div class="mcard"><div class="mc-lbl">Cards In</div><div class="mc-val cb" id="gg-cin">—</div></div>
       <div class="mcard"><div class="mc-lbl">Entered in PC</div><div class="mc-val cg" id="gg-cpc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Sign-Ups</div><div class="mc-val ca" id="gg-su">—</div></div>
       <div class="mcard"><div class="mc-lbl">Live Stream</div><div class="mc-val cb" id="gg-ls">—</div></div>
-    </div>
-    <div class="tbl-card"><table><thead><tr>
-      <th>Date</th><th>Team</th><th>Guests</th>
-      <th>Cards In</th><th>In Planning Center</th>
-      <th class="hide-sm">Sign-Ups</th><th class="hide-sm">Live Stream</th>
-    </tr></thead><tbody id="gg-body"></tbody></table></div>
-  </div>
-
-  <!-- Flags -->
-  <div class="tab-panel" id="r-flags">
-    <div class="metrics">
       <div class="mcard"><div class="mc-lbl">Follow-ups</div><div class="mc-val ca" id="f-fu">—</div></div>
       <div class="mcard"><div class="mc-lbl">Incidents</div><div class="mc-val cr" id="f-inc">—</div></div>
       <div class="mcard"><div class="mc-lbl">Tech Issues</div><div class="mc-val cb" id="f-tch">—</div></div>
@@ -1155,7 +1143,7 @@ function showTeamDetail(teamName){
 
 // ── REPORTS ───────────────────────────────────────────────────────────────
 function renderReports(data){
-  renderAttendance(data);renderGuests(data);renderRFlags(data);
+  renderAttendance(data);renderRFlags(data);
   renderPcAttendance();
 }
 function applyReportFilters(){
@@ -1475,19 +1463,9 @@ function pcaSort(key){
   pcaSortState.key=key;
   applyPcAttFilters();
 }
-function renderGuests(data){
+function renderRFlags(data){
   setEl('gg-gst',sum(data,'firstTimeGuests'));setEl('gg-cin',sum(data,'connectCards'));
   setEl('gg-cpc',sum(data,'connectEntered'));setEl('gg-su',sum(data,'signUps'));setEl('gg-ls',sum(data,'liveStream'));
-  var tbody=document.getElementById('gg-body');tbody.innerHTML='';
-  sortArr(data,'date',false).forEach(function(d){
-    var tr=document.createElement('tr');tr.className='dr';
-    tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
-      +'<td>'+d.firstTimeGuests+'</td><td>'+d.connectCards+'</td><td>'+d.connectEntered+'</td>'
-      +'<td class="hide-sm">'+d.signUps+'</td><td class="hide-sm">'+d.liveStream+'</td>';
-    tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
-  });
-}
-function renderRFlags(data){
   setEl('f-fu',data.filter(function(d){return hasContent(d.followUp)||hasContent(d.followUp2);}).length);
   setEl('f-inc',data.filter(function(d){return hasContent(d.incidents);}).length);
   setEl('f-tch',data.filter(function(d){return hasContent(d.techIssues);}).length);
