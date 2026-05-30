@@ -340,15 +340,14 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   <!-- Reported Attendance -->
   <div class="tab-panel active" id="r-attendance">
     <div class="metrics">
-      <div class="mcard"><div class="mc-lbl">Avg Scheduled</div><div class="mc-val cb" id="a-sch">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Avg Served</div><div class="mc-val cg" id="a-srv">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Avg Sat in Service</div><div class="mc-val cb" id="a-sat">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Avg Rally</div><div class="mc-val ca" id="a-rly">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Avg Wed Prayer</div><div class="mc-val cp" id="a-pry">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Total Scheduled</div><div class="mc-val cb" id="a-sch">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Total Served</div><div class="mc-val cg" id="a-srv">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Total Sat in Service</div><div class="mc-val cb" id="a-sat">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Total Rally</div><div class="mc-val ca" id="a-rly">—</div></div>
       <div class="mcard"><div class="mc-lbl">Total Active Leaders</div><div class="mc-val cg" id="a-act">—</div></div>
     </div>
     <div class="tbl-card"><table><thead><tr>
-      <th>Date</th><th>Team</th><th>Scheduled</th><th>Served</th>
+      <th>Date ↓</th><th>Team</th><th>Scheduled</th><th>Served</th>
       <th>Sat in Service</th><th class="hide-sm">Rally</th>
       <th class="hide-sm">Min Leaders</th><th class="hide-sm">Wed Prayer</th>
     </tr></thead><tbody id="a-body"></tbody></table></div>
@@ -1191,11 +1190,11 @@ function renderRTable(data){
 }
 function rSort(key){rSortState.asc=rSortState.key===key?!rSortState.asc:false;rSortState.key=key;applyReportFilters();}
 function renderAttendance(data){
-  setEl('a-sch',avg(data,'scheduled'));setEl('a-srv',avg(data,'served'));
-  setEl('a-sat',avg(data,'satInService'));setEl('a-rly',avg(data,'attendedRally'));
-  setEl('a-pry',avg(data,'wednesdayPrayer'));setEl('a-act',sum(data,'totalActive'));
+  setEl('a-sch',sum(data,'scheduled'));setEl('a-srv',sum(data,'served'));
+  setEl('a-sat',sum(data,'satInService'));setEl('a-rly',sum(data,'attendedRally'));
+  setEl('a-act',sum(data,'totalActive'));
   var tbody=document.getElementById('a-body');tbody.innerHTML='';
-  sortArr(data,'date',false).forEach(function(d){
+  [...data].sort(function(a,b){var da=parseDate(a.date),db=parseDate(b.date);return(db?db.getTime():0)-(da?da.getTime():0);}).forEach(function(d){
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'
