@@ -349,7 +349,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     <div class="tbl-card"><table><thead><tr>
       <th>Date ↓</th><th>Team</th><th>Scheduled</th><th>Served</th>
       <th>Sat in Service</th><th class="hide-sm">Rally</th>
-      <th class="hide-sm">Min Leaders</th><th class="hide-sm">Wed Prayer</th>
+      <th class="hide-sm">Min Leaders</th>
     </tr></thead><tbody id="a-body"></tbody></table></div>
   </div>
 
@@ -1198,7 +1198,7 @@ function renderAttendance(data){
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-size:12px">'+(d.date||d.timestamp)+'</td><td>'+d.team+'</td>'
       +'<td>'+d.scheduled+'</td><td>'+d.served+'</td><td>'+d.satInService+'</td>'
-      +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td><td class="hide-sm">'+d.wednesdayPrayer+'</td>';
+      +'<td class="hide-sm">'+d.attendedRally+'</td><td class="hide-sm">'+d.minLeaders+'</td>';
     tr.onclick=function(){openReportDetail(d);};tbody.appendChild(tr);
   });
 }
