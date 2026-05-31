@@ -102,8 +102,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 
 /* FLAGS */
 .flags-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px}
-.flag-item{padding:11px 12px;border-radius:var(--rs);background:var(--g50);margin-bottom:7px;cursor:pointer;border:1px solid transparent;transition:all .15s}
-.flag-item:hover{background:var(--bluef);border-color:var(--blue)}
+.flag-item{padding:11px 12px;border-radius:var(--rs);background:var(--g50);margin-bottom:7px;border:1px solid transparent}
 .flag-item:last-child{margin-bottom:0}
 .flag-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--amber);margin-bottom:2px}
 .flag-meta{font-size:10px;color:var(--g400);margin-bottom:3px}
@@ -1127,7 +1126,7 @@ function renderGlanceFlags(cur){
     });
     if(!items.length)return'<div class="empty" style="padding:20px">No items this period.</div>';
     return items.map(function(it){
-      return'<div class="flag-item" onclick="openReportDetail(reportData['+(it.report.id-1)+'])">'
+      return'<div class="flag-item">'
         +'<div class="flag-type">'+it.label+'</div>'
         +'<div class="flag-meta">'+it.report.team+' · '+(it.report.date||it.report.timestamp)+' · '+it.report.name+'</div>'
         +'<div class="flag-txt">'+it.text+'</div></div>';
