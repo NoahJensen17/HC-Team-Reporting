@@ -1014,7 +1014,7 @@ function renderBreakdownChart(cur,b){
       {label:'Unconfirmed',data:unciData,backgroundColor:'#f59e0b',stack:'srv',borderSkipped:'bottom'},
       {label:'Declined',data:declData,backgroundColor:'#ef4444',stack:'srv',borderSkipped:'bottom',borderRadius:4,borderRadiusTop:4}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,
+    options:{responsive:true,maintainAspectRatio:false,barPercentage:0.7,categoryPercentage:0.75,
       plugins:{
         legend:{position:'bottom',labels:{usePointStyle:true,padding:14,font:{size:11}}},
         tooltip:{backgroundColor:'#0d1b2a',padding:10,cornerRadius:8,titleFont:{size:12},bodyFont:{size:11}}
