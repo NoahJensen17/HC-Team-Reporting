@@ -1508,9 +1508,9 @@ function renderPipeline(){
   var inprog=onboardData.filter(function(d){return obStatus(d)==='inprog';}).length;
   var notstart=onboardData.filter(function(d){return obStatus(d)==='notstart';}).length;
   setEl('o-grads',gradsData.length);setEl('o-ns',notstart);setEl('o-ip',inprog);setEl('o-done',complete);
-  var ns=onboardData.filter(function(d){return obStatus(d)==='notstart';});
-  var ip=onboardData.filter(function(d){return obStatus(d)==='inprog';});
-  var dn=onboardData.filter(function(d){return obStatus(d)==='complete';});
+  var ns=onboardData.filter(function(d){return obStatus(d)==='notstart';}).sort(function(a,b){return a.name.localeCompare(b.name);});
+  var ip=onboardData.filter(function(d){return obStatus(d)==='inprog';}).sort(function(a,b){return b.progress-a.progress||a.name.localeCompare(b.name);});
+  var dn=onboardData.filter(function(d){return obStatus(d)==='complete';}).sort(function(a,b){return a.name.localeCompare(b.name);});
   function cards(arr){
     if(!arr.length)return'<div style="padding:8px;font-size:12px;color:var(--g400)">None</div>';
     return arr.map(function(d){
@@ -1638,9 +1638,7 @@ function openOnboardDetail(d){
     +'</div>'
     +'<div class="d-sec">Contact</div>'
     +'<div class="stat-grid">'+stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+'</div>'
-    +(d.notes?tblock('Notes',d.notes):'')
-    +'<div style="margin-top:10px;font-size:11px;color:var(--g300)">Onboarding Complete: '+(d.complete||'No')+'</div>'
-    +'';
+    +(d.notes?tblock('Notes',d.notes):'');
   openOv();
 }
 function openGradDetail(d,linked){
