@@ -317,6 +317,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 
   <div class="sec-hdr"><span>Team Health</span><span id="team-period-lbl" style="font-size:11px;font-weight:400;color:var(--g400)"></span></div>
   <div class="team-grid" id="team-grid"><div class="loading"><div class="lds"></div><br>Loading…</div></div>
+  <div class="team-grid" id="team-grid-2"></div>
 
   <div class="sec-hdr"><span>Flags &amp; Follow-ups</span></div>
   <div class="flags-grid">
@@ -1094,7 +1095,7 @@ function renderTeamGrid(cur,b){
     if(dk)teamMap[team].dates[dk]=true;
   });
   var teams=Object.values(teamMap).sort(function(a,b){return a.name.localeCompare(b.name);});
-  var html=teams.map(function(t){
+  function renderCard(t){
     var confRate=t.scheduled>0?Math.round(t.confirmed/t.scheduled*100):0;
     var uniqueDates=Object.keys(t.dates).length;
     var pct=Math.min(100,expectedSundays>0?Math.round(uniqueDates/expectedSundays*100):0);
@@ -1109,8 +1110,13 @@ function renderTeamGrid(cur,b){
       +'<div class="acct-row"><span>Accountability</span><span>'+uniqueDates+'/'+expectedSundays+' Sundays</span></div>'
       +'<div class="acct-track"><div class="acct-fill '+cls+'" style="width:'+pct+'%"></div></div>'
       +'</div>';
-  }).join('');
-  document.getElementById('team-grid').innerHTML=html||'<div class="empty">No PC scheduling data for this period.</div>';
+  }
+  var mid=Math.ceil(teams.length/2);
+  var rows=[teams.slice(0,mid),teams.slice(mid)];
+  ['team-grid','team-grid-2'].forEach(function(id,ri){
+    document.getElementById(id).innerHTML=rows[ri].map(renderCard).join('')||'';
+  });
+  if(!teams.length)document.getElementById('team-grid').innerHTML='<div class="empty">No PC scheduling data for this period.</div>';
 }
 
 function renderGlanceFlags(cur){
