@@ -21,6 +21,7 @@
   --amber:#f59e0b;--amberf:#fef3c7;
   --red:#ef4444;--redf:#fee2e2;
   --purple:#8b5cf6;--purplef:#ede9fe;
+  --pink:#ec4899;--pinkf:#fce7f3;
   --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g300:#cbd5e1;
   --g400:#94a3b8;--g500:#64748b;--g600:#475569;--g700:#334155;--g800:#1e293b;
   --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
@@ -63,7 +64,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .hcard::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .hcard.cb::after{background:var(--blue)}.hcard.cg::after{background:var(--green)}
 .hcard.ca::after{background:var(--amber)}.hcard.cp::after{background:var(--purple)}
-.hcard.cr::after{background:var(--red)}.hcard.cn::after{background:var(--navy)}
+.hcard.cr::after{background:var(--red)}.hcard.cn::after{background:var(--navy)}.hcard.cpk::after{background:var(--pink)}
 .hc-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-bottom:6px}
 .hc-val{font-size:26px;font-weight:700;color:var(--g800);letter-spacing:-.5px;line-height:1;margin-bottom:5px}
 .hc-delta{font-size:11px;font-weight:500;min-height:15px}
@@ -72,8 +73,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 
 /* CHART CARDS */
 .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:14px}
-.ccard{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
-.ccard-full{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);margin-bottom:14px}
+.ccard{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.ccard::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--navy)}
+.ccard-full{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);margin-bottom:14px;position:relative;overflow:hidden}
+.ccard-full::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--navy)}
 .ccard-title{font-size:13px;font-weight:600;color:var(--g800);margin-bottom:3px}
 .ccard-sub{font-size:11px;color:var(--g400);margin-bottom:14px}
 
@@ -90,7 +93,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 
 /* TEAM GRID */
 .team-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:16px}
-.tcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);border:1px solid transparent}
+.tcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);border:1px solid transparent;position:relative;overflow:hidden}
+.tcard::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--navy)}
 .tcard-name{font-size:13px;font-weight:600;color:var(--g800);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tcard-stats{display:flex;gap:8px;margin-bottom:10px}
 .ts{flex:1}.ts-v{font-size:18px;font-weight:700;color:var(--g800);line-height:1}
@@ -191,7 +195,8 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 
 /* METRICS ROWS */
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:11px;margin-bottom:16px}
-.mcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh)}
+.mcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.mcard::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--navy)}
 .mc-lbl{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:5px}
 .mc-val{font-size:22px;font-weight:700}
 .mc-val.cb{color:var(--blue2)}.mc-val.cg{color:var(--green)}.mc-val.ca{color:var(--amber)}.mc-val.cp{color:var(--purple)}.mc-val.cr{color:var(--red)}
@@ -288,10 +293,10 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <div class="page">
   <div class="hero-grid">
     <div class="hcard cb"><div class="hc-lbl">PC Servants Scheduled</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div></div>
-    <div class="hcard cn"><div class="hc-lbl">PC Servant Check-ins</div><div class="hc-val" id="g-ci">—</div><div class="hc-delta neu" id="g-ci-d"></div></div>
+    <div class="hcard cp"><div class="hc-lbl">PC Servant Check-ins</div><div class="hc-val" id="g-ci">—</div><div class="hc-delta neu" id="g-ci-d"></div></div>
     <div class="hcard cg"><div class="hc-lbl">Reported First-Time Guests</div><div class="hc-val" id="g-gst">—</div><div class="hc-delta neu" id="g-gst-d"></div></div>
     <div class="hcard ca"><div class="hc-lbl">Reported Connect Cards</div><div class="hc-val" id="g-crd">—</div><div class="hc-delta neu" id="g-crd-d"></div></div>
-    <div class="hcard cp"><div class="hc-lbl">Reported Sign-Ups</div><div class="hc-val" id="g-su">—</div><div class="hc-delta neu" id="g-su-d"></div></div>
+    <div class="hcard cpk"><div class="hc-lbl">Reported Sign-Ups</div><div class="hc-val" id="g-su">—</div><div class="hc-delta neu" id="g-su-d"></div></div>
   </div>
 
   <div class="chart-row">
