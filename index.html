@@ -407,7 +407,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <div class="sec" id="sec-onboarding">
 <div class="page">
   <div class="tabs-nav">
-    <button class="tab-btn active" data-otab="pipeline" onclick="switchTab('o','pipeline')">Pipeline</button>
+    <button class="tab-btn active" data-otab="pipeline" onclick="switchTab('o','pipeline')">Progress Tracker</button>
     <button class="tab-btn" data-otab="tracker" onclick="switchTab('o','tracker')">Onboarding Tracker</button>
     <button class="tab-btn" data-otab="grads" onclick="switchTab('o','grads')">HC Connect Grads</button>
   </div>
@@ -416,10 +416,9 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   <div class="tab-panel active" id="o-pipeline">
     <div class="metrics">
       <div class="mcard"><div class="mc-lbl">Total Grads</div><div class="mc-val cb" id="o-grads">—</div></div>
+      <div class="mcard"><div class="mc-lbl">Not Started</div><div class="mc-val cr" id="o-ns">—</div></div>
       <div class="mcard"><div class="mc-lbl">In Onboarding</div><div class="mc-val ca" id="o-ip">—</div></div>
       <div class="mcard"><div class="mc-lbl">Complete</div><div class="mc-val cg" id="o-done">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Not Started</div><div class="mc-val cr" id="o-ns">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Avg Progress</div><div class="mc-val cb" id="o-avg">—</div></div>
     </div>
     <div class="pipeline" id="pipeline-board"></div>
   </div>
@@ -1500,7 +1499,7 @@ function renderRFlags(data){
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────
-function obStatus(d){if(/yes/i.test(d.complete))return'complete';if(d.progress>0)return'inprog';return'notstart';}
+function obStatus(d){if(d.progress===100||/yes/i.test(d.complete))return'complete';if(d.progress>0)return'inprog';return'notstart';}
 function renderOnboarding(){
   renderPipeline();renderOTable(onboardData);renderGrads(gradsData);
 }
@@ -1508,8 +1507,7 @@ function renderPipeline(){
   var complete=onboardData.filter(function(d){return obStatus(d)==='complete';}).length;
   var inprog=onboardData.filter(function(d){return obStatus(d)==='inprog';}).length;
   var notstart=onboardData.filter(function(d){return obStatus(d)==='notstart';}).length;
-  var avgP=onboardData.length?Math.round(onboardData.reduce(function(a,d){return a+d.progress;},0)/onboardData.length):0;
-  setEl('o-grads',gradsData.length);setEl('o-ip',inprog);setEl('o-done',complete);setEl('o-ns',notstart);setEl('o-avg',avgP+'%');
+  setEl('o-grads',gradsData.length);setEl('o-ns',notstart);setEl('o-ip',inprog);setEl('o-done',complete);
   var ns=onboardData.filter(function(d){return obStatus(d)==='notstart';});
   var ip=onboardData.filter(function(d){return obStatus(d)==='inprog';});
   var dn=onboardData.filter(function(d){return obStatus(d)==='complete';});
@@ -1571,12 +1569,23 @@ function applyGradFilters(){
   renderGrads(f);
 }
 function renderGrads(data){
-  setEl('grad-tot',data.length);
-  setEl('grad-pc',data.filter(function(d){return d.addedToPC&&d.addedToPC.toString().trim()!=='';}).length);
-  setEl('grad-bc',data.filter(function(d){return d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!=='';}).length);
-  setEl('grad-y',data.filter(function(d){return/yes/i.test(d.youth);}).length);
+  // Also include 100%-complete onboarders not already matched in gradsData
+  var completedOnboard=onboardData.filter(function(o){
+    return o.progress===100&&!data.find(function(g){
+      return(g.email&&o.email&&g.email.trim().toLowerCase()===o.email.trim().toLowerCase())
+        ||(g.fullName&&o.name&&g.fullName.trim().toLowerCase()===o.name.trim().toLowerCase());
+    });
+  }).map(function(o){
+    return{fullName:o.name,email:o.email||'',phone:o.phone||'',teams:o.team||'',
+      addedToPC:'',addedToBasecamp:'',youth:'',notes:'',_fromOnboard:true};
+  });
+  var merged=data.concat(completedOnboard);
+  setEl('grad-tot',merged.length);
+  setEl('grad-pc',merged.filter(function(d){return d.addedToPC&&d.addedToPC.toString().trim()!=='';}).length);
+  setEl('grad-bc',merged.filter(function(d){return d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!=='';}).length);
+  setEl('grad-y',merged.filter(function(d){return/yes/i.test(d.youth);}).length);
   var tbody=document.getElementById('g-body');tbody.innerHTML='';
-  sortArr(data,gSortState.key,gSortState.asc).forEach(function(d){
+  sortArr(merged,gSortState.key,gSortState.asc).forEach(function(d){
     var pcB=d.addedToPC&&d.addedToPC.toString().trim()!==''?'<span class="badge by">Yes</span>':'<span class="badge bn">No</span>';
     var bcB=d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!==''?'<span class="badge by">Yes</span>':'<span class="badge bn">No</span>';
     var linked=onboardData.find(function(o){
