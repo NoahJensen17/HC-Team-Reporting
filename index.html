@@ -407,9 +407,8 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <div class="sec" id="sec-onboarding">
 <div class="page">
   <div class="tabs-nav">
-    <button class="tab-btn active" data-otab="pipeline" onclick="switchTab('o','pipeline')">Progress Tracker</button>
-    <button class="tab-btn" data-otab="tracker" onclick="switchTab('o','tracker')">Onboarding Tracker</button>
-    <button class="tab-btn" data-otab="grads" onclick="switchTab('o','grads')">HC Connect Grads</button>
+    <button class="tab-btn active" data-otab="pipeline" onclick="switchTab('o','pipeline')">HC Connect Dashboard</button>
+    <button class="tab-btn" data-otab="tracker" onclick="switchTab('o','tracker')">Progress Tracker</button>
   </div>
 
   <!-- Pipeline -->
@@ -447,30 +446,6 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     </div>
   </div>
 
-  <!-- Grads -->
-  <div class="tab-panel" id="o-grads">
-    <div class="metrics">
-      <div class="mcard"><div class="mc-lbl">Total Grads</div><div class="mc-val cb" id="grad-tot">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Added to PC</div><div class="mc-val cg" id="grad-pc">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Added to Basecamp</div><div class="mc-val cg" id="grad-bc">—</div></div>
-      <div class="mcard"><div class="mc-lbl">Youth</div><div class="mc-val cp" id="grad-y">—</div></div>
-    </div>
-    <div class="tbl-card">
-      <div class="tbl-toolbar">
-        <div class="srch"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="g-search" placeholder="Name or email…" oninput="applyGradFilters()"></div>
-        <select class="fsel" id="g-team" onchange="applyGradFilters()"><option value="">All teams</option></select>
-      </div>
-      <div class="loading" id="g-loading"><div class="lds"></div><br>Loading…</div>
-      <table id="g-table" style="display:none"><thead><tr>
-        <th onclick="gSort('fullName')">Name</th>
-        <th class="hide-sm" onclick="gSort('email')">Email</th>
-        <th class="hide-sm">Phone</th>
-        <th onclick="gSort('teams')">Team(s)</th>
-        <th>PC Services</th>
-        <th class="hide-sm">Basecamp</th>
-      </tr></thead><tbody id="g-body"></tbody></table>
-    </div>
-  </div>
 </div>
 </div>
 
@@ -499,7 +474,7 @@ var TAB_CHECKINS_PEOPLE='CheckIns_People';
 var G='month', OFF=0;
 var reportData=[], gradsData=[], onboardData=[], schedData=[], checkInPeopleData=[];
 var ciPersonLookup=null;
-var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true}, gSortState={key:'fullName',asc:true};
+var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true};
 var pcaSortState={key:'team',asc:true};
 var pcaModal={g:null,q:null,month:null,date:null,acc:null};
 var loaded=0, pcoLoaded=0;
@@ -859,10 +834,7 @@ function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
   loaded++;
   if(loaded<3)return;
-  document.getElementById('g-loading').style.display='none';document.getElementById('g-table').style.display='';
   document.getElementById('o-loading').style.display='none';document.getElementById('o-table').style.display='';
-  var gt=[];gradsData.forEach(function(d){if(d.teams)d.teams.split(',').forEach(function(t){var tr=t.trim();if(tr&&!gt.includes(tr))gt.push(tr);});});
-  fillSelect('g-team',gt.sort());
   fillSelect('o-team',uniq(onboardData,'team'));
   renderAll();
 }
@@ -1501,7 +1473,7 @@ function renderRFlags(data){
 // ── ONBOARDING ────────────────────────────────────────────────────────────
 function obStatus(d){if(d.progress===100||/yes/i.test(d.complete))return'complete';if(d.progress>0)return'inprog';return'notstart';}
 function renderOnboarding(){
-  renderPipeline();renderOTable(onboardData);renderGrads(gradsData);
+  renderPipeline();renderOTable(onboardData);
 }
 function renderPipeline(){
   var complete=onboardData.filter(function(d){return obStatus(d)==='complete';}).length;
@@ -1518,7 +1490,7 @@ function renderPipeline(){
         +'<div class="pc-nm">'+d.name+'</div>'
         +'<div class="pc-tm">'+d.team+(d.positions?' · '+d.positions:'')+'</div>'
         +(d.progress>0?'<div style="margin-top:6px;display:flex;align-items:center;gap:5px">'
-          +'<div class="prog" style="width:70px"><div class="prog-f" style="width:'+d.progress+'%;background:'+(d.progress===100?'var(--green)':'var(--blue)')+'"></div></div>'
+          +'<div class="prog" style="width:70px"><div class="prog-f" style="width:'+d.progress+'%;background:'+(d.progress===100?'var(--green)':'var(--amber)')+'"></div></div>'
           +'<span style="font-size:10px;color:var(--g400)">'+d.progress+'%</span></div>':'')
         +'</div>';
     }).join('');
@@ -1546,7 +1518,7 @@ function renderOTable(data){
     var st=obStatus(d);
     var bcls=st==='complete'?'bc':st==='inprog'?'bp':'bns';
     var blbl=st==='complete'?'Complete':st==='inprog'?'In Progress':'Not Started';
-    var pc=d.progress===100?'var(--green)':d.progress>0?'var(--blue)':'var(--g200)';
+    var pc=d.progress===100?'var(--green)':d.progress>0?'var(--amber)':'var(--g200)';
     var tr=document.createElement('tr');tr.className='dr';
     tr.innerHTML='<td style="font-weight:600">'+d.name+'</td><td>'+d.team+'</td>'
       +'<td class="hide-sm" style="color:var(--g500);font-size:12px">'+d.positions+'</td>'
@@ -1559,49 +1531,6 @@ function renderOTable(data){
   });
 }
 function oSort(key){oSortState.asc=oSortState.key===key?!oSortState.asc:true;oSortState.key=key;applyOnboardFilters();}
-function applyGradFilters(){
-  var q=document.getElementById('g-search').value.toLowerCase();
-  var tm=document.getElementById('g-team').value;
-  var f=gradsData.filter(function(d){
-    return(!q||d.fullName.toLowerCase().includes(q)||d.email.toLowerCase().includes(q))
-      &&(!tm||d.teams.includes(tm));
-  });
-  renderGrads(f);
-}
-function renderGrads(data){
-  // Also include 100%-complete onboarders not already matched in gradsData
-  var completedOnboard=onboardData.filter(function(o){
-    return o.progress===100&&!data.find(function(g){
-      return(g.email&&o.email&&g.email.trim().toLowerCase()===o.email.trim().toLowerCase())
-        ||(g.fullName&&o.name&&g.fullName.trim().toLowerCase()===o.name.trim().toLowerCase());
-    });
-  }).map(function(o){
-    return{fullName:o.name,email:o.email||'',phone:o.phone||'',teams:o.team||'',
-      addedToPC:'',addedToBasecamp:'',youth:'',notes:'',_fromOnboard:true};
-  });
-  var merged=data.concat(completedOnboard);
-  setEl('grad-tot',merged.length);
-  setEl('grad-pc',merged.filter(function(d){return d.addedToPC&&d.addedToPC.toString().trim()!=='';}).length);
-  setEl('grad-bc',merged.filter(function(d){return d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!=='';}).length);
-  setEl('grad-y',merged.filter(function(d){return/yes/i.test(d.youth);}).length);
-  var tbody=document.getElementById('g-body');tbody.innerHTML='';
-  sortArr(merged,gSortState.key,gSortState.asc).forEach(function(d){
-    var pcB=d.addedToPC&&d.addedToPC.toString().trim()!==''?'<span class="badge by">Yes</span>':'<span class="badge bn">No</span>';
-    var bcB=d.addedToBasecamp&&d.addedToBasecamp.toString().trim()!==''?'<span class="badge by">Yes</span>':'<span class="badge bn">No</span>';
-    var linked=onboardData.find(function(o){
-      if(d.email&&o.email&&d.email.trim().toLowerCase()===o.email.trim().toLowerCase())return true;
-      return o.name&&d.fullName&&o.name.trim().toLowerCase()===d.fullName.trim().toLowerCase();
-    });
-    var tr=document.createElement('tr');tr.className='dr';
-    tr.innerHTML='<td><span style="font-weight:600">'+d.fullName+'</span>'
-      +(linked?'<span class="badge bp" style="margin-left:7px;font-size:10px">'+(obStatus(linked)==='complete'?'Onboarding ✓':'Onboarding: '+linked.progress+'%')+'</span>':'')
-      +'</td><td class="hide-sm" style="font-size:12px;color:var(--g500)">'+d.email+'</td>'
-      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+d.phone+'</td>'
-      +'<td style="font-size:12px">'+d.teams+'</td><td>'+pcB+'</td><td class="hide-sm">'+bcB+'</td>';
-    tr.onclick=function(){openGradDetail(d,linked);};tbody.appendChild(tr);
-  });
-}
-function gSort(key){gSortState.asc=gSortState.key===key?!gSortState.asc:true;gSortState.key=key;applyGradFilters();}
 
 // ── DETAIL PANELS ─────────────────────────────────────────────────────────
 function openReportDetail(d){
@@ -1628,7 +1557,7 @@ function openOnboardDetail(d){
     '<div class="d-title">'+d.name+'</div>'
     +'<div class="d-sub">'+d.team+(d.positions?' &nbsp;·&nbsp; '+d.positions:'')+'</div>'
     +'<div style="display:flex;align-items:center;gap:9px;margin:12px 0">'
-    +'<div class="prog" style="width:200px;height:7px"><div class="prog-f" style="width:'+d.progress+'%;background:'+(d.progress===100?'var(--green)':'var(--blue)')+'"></div></div>'
+    +'<div class="prog" style="width:200px;height:7px"><div class="prog-f" style="width:'+d.progress+'%;background:'+(d.progress===100?'var(--green)':'var(--amber)')+'"></div></div>'
     +'<span style="font-weight:600">'+d.progress+'%</span>'
     +'<span style="font-size:12px;color:var(--g400)">('+d.completedSteps+'/'+d.totalSteps+' steps)</span>'
     +'</div>'
@@ -1638,29 +1567,9 @@ function openOnboardDetail(d){
     +'</div>'
     +'<div class="d-sec">Contact</div>'
     +'<div class="stat-grid">'+stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+'</div>'
-    +(d.notes?tblock('Notes',d.notes):'');
+    +(d.notes?'<div class="txt-block" style="margin-top:10px">'+d.notes+'</div>':'');
   openOv();
 }
-function openGradDetail(d,linked){
-  document.getElementById('d-content').innerHTML=
-    '<div class="d-title">'+d.fullName+'</div>'
-    +'<div class="d-sub">HC Connect Graduate</div>'
-    +'<div class="d-sec">Contact Info</div>'
-    +'<div class="stat-grid">'+stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+stat('Team(s)',d.teams||'—')+stat('Youth',d.youth||'—')+'</div>'
-    +'<div class="d-sec">Setup Status</div>'
-    +'<div class="stat-grid">'+stat('Added to PC Services',d.addedToPC||'—')+stat('PC Team Assignments',d.addedToPCTeam||'—')+stat('Added to Basecamp',d.addedToBasecamp||'—')+stat('Basecamp Team',d.addedToBasecampTeam||'—')+'</div>'
-    +(d.notes?tblock('F/U Notes',d.notes):'')
-    +(linked?'<div class="d-sec">Onboarding Progress</div>'
-      +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">'
-      +'<div class="prog" style="width:160px;height:7px"><div class="prog-f" style="width:'+linked.progress+'%;background:'+(linked.progress===100?'var(--green)':'var(--blue)')+'"></div></div>'
-      +'<span style="font-weight:600">'+linked.progress+'%</span>'
-      +'<span style="font-size:12px;color:var(--g400)">'+linked.team+'</span></div>'
-      +'<div style="font-size:12px;color:var(--g400)">Go to Onboarding tab to see full checklist.</div>'
-      :'<div style="margin-top:14px;font-size:13px;color:var(--g300);font-style:italic">No linked onboarding record found.</div>')
-    +'';
-  openOv();
-}
-
 // ── SCHEDULING ────────────────────────────────────────────────────────────
 function filterSchedByPeriod(data,gran,off){
   var b=getPeriodBounds(gran,off);
@@ -1679,7 +1588,7 @@ function switchSection(name){
   if(name==='reports')applyReportFilters();
 }
 function switchTab(prefix,name){
-  var ids=prefix==='r'?['attendance','pcattendance','guests','flags']:['pipeline','tracker','grads'];
+  var ids=prefix==='r'?['attendance','pcattendance','guests','flags']:['pipeline','tracker'];
   ids.forEach(function(id){
     var panel=document.getElementById(prefix+'-'+id);
     var btn=document.querySelector('[data-'+prefix+'tab="'+id+'"]');
