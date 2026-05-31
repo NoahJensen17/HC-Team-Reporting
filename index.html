@@ -1511,7 +1511,7 @@ function applyOnboardFilters(){
   renderOTable(f);
 }
 function renderOTable(data){
-  var statusRank={complete:2,inprog:1,notstart:0};
+  var statusRank={notstart:2,inprog:1,complete:0};
   var sorted=[...data].sort(function(a,b){
     if(oSortState.key==='default'){
       var sr=statusRank[obStatus(b)]-statusRank[obStatus(a)];if(sr!==0)return sr;
