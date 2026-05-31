@@ -297,9 +297,9 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 
   <div class="chart-row">
     <div class="ccard">
-      <div class="ccard-title">Activity Breakdown</div>
-      <div class="ccard-sub" id="breakdown-sub">Served, Guests &amp; Connect Cards by week</div>
-      <div style="position:relative;height:220px"><canvas id="chart-breakdown"></canvas></div>
+      <div class="ccard-title">Serving Breakdown</div>
+      <div class="ccard-sub" id="breakdown-sub">PC Scheduling — by Sunday</div>
+      <div style="position:relative;height:260px"><canvas id="chart-breakdown"></canvas></div>
     </div>
     <div class="ccard">
       <div class="ccard-title">Onboarding Pipeline</div>
@@ -907,61 +907,118 @@ function renderGlance(){
   renderGlanceFlags(cur);
 }
 
-function getBreakdownBuckets(gran,cur,b){
+function getServingBreakdownBuckets(gran,b){
+  var ciLookup=ciPersonLookup||new Set();
+  function countBucket(recs){
+    var conf=0,unci=0,decl=0,ci=0;
+    recs.forEach(function(r){
+      if(r.status==='Confirmed')conf++;else if(r.status==='Declined')decl++;else unci++;
+      var dk=pcaDateKey(r.plan_date),k=r.person_id||(r.person_name||'').trim().toLowerCase();
+      if(dk&&k&&ciLookup.has(k+'|'+dk))ci++;
+    });
+    return{conf:conf,unci:unci,decl:decl,ci:ci};
+  }
   var buckets=[],d;
   if(gran==='week'){
     var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     for(var di=0;di<7;di++){
       d=new Date(b.start);d.setDate(d.getDate()+di);
-      var key=d.toDateString();
-      var sub=cur.filter(function(r){var rd=parseDate(r.date||r.timestamp);return rd&&rd.toDateString()===key;});
-      buckets.push({label:DAYS[d.getDay()],served:sum(sub,'served'),guests:sum(sub,'firstTimeGuests'),cards:sum(sub,'connectCards')});
+      var dk0=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+      var sub=schedData.filter(function(r){return pcaDateKey(r.plan_date)===dk0;});
+      buckets.push(Object.assign({label:DAYS[d.getDay()]},countBucket(sub)));
     }
   } else if(gran==='month'){
     d=new Date(b.start);while(d.getDay()!==0)d.setDate(d.getDate()+1);
     while(d<=b.end){
-      var sd=new Date(d),key2=sd.toDateString();
-      var sub2=cur.filter(function(r){var rd=parseDate(r.date||r.timestamp);return rd&&rd.toDateString()===key2;});
-      buckets.push({label:(sd.getMonth()+1)+'/'+sd.getDate(),served:sum(sub2,'served'),guests:sum(sub2,'firstTimeGuests'),cards:sum(sub2,'connectCards')});
-      d.setDate(d.getDate()+7);
+      var dk1=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+      var lbl=(d.getMonth()+1)+'/'+d.getDate();
+      var sub2=schedData.filter(function(r){return pcaDateKey(r.plan_date)===dk1;});
+      buckets.push(Object.assign({label:lbl},countBucket(sub2)));
+      d=new Date(d);d.setDate(d.getDate()+7);
     }
   } else {
     d=new Date(b.start.getFullYear(),b.start.getMonth(),1);
     while(d<=b.end){
       var yr=d.getFullYear(),mo=d.getMonth();
-      var sub3=cur.filter(function(r){var rd=parseDate(r.date||r.timestamp);return rd&&rd.getFullYear()===yr&&rd.getMonth()===mo;});
-      buckets.push({label:MS[mo]+(gran==='year'?'':' '+yr),served:sum(sub3,'served'),guests:sum(sub3,'firstTimeGuests'),cards:sum(sub3,'connectCards')});
-      d.setMonth(d.getMonth()+1);
+      var sub3=schedData.filter(function(r){var pd=parseDate(r.plan_date);return pd&&pd.getFullYear()===yr&&pd.getMonth()===mo;});
+      buckets.push(Object.assign({label:MS[mo]+(gran==='year'?'':' '+yr)},countBucket(sub3)));
+      d=new Date(yr,mo+1,1);
     }
   }
   return buckets;
 }
 
 function renderBreakdownChart(cur,b){
-  var bkts=getBreakdownBuckets(G,cur,b);
-  var labels=bkts.map(function(b){return b.label;});
-  var served=bkts.map(function(b){return b.served;});
-  var guests=bkts.map(function(b){return b.guests;});
-  var cards=bkts.map(function(b){return b.cards;});
+  var bkts=getServingBreakdownBuckets(G,b);
+  var labels=bkts.map(function(x){return x.label;});
+  var ciData=bkts.map(function(x){return x.ci;});
+  var confData=bkts.map(function(x){return x.conf;});
+  var unciData=bkts.map(function(x){return x.unci;});
+  var declData=bkts.map(function(x){return x.decl;});
+
+  // Custom plugin: draw totals above bars and counts inside segments
+  var labelPlugin={
+    id:'srvLabels',
+    afterDatasetsDraw:function(chart){
+      var ctx=chart.ctx,ds=chart.data.datasets;
+      ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+      // Check-ins total above bar
+      var m0=chart.getDatasetMeta(0);
+      m0.data.forEach(function(bar,i){
+        var v=ds[0].data[i];if(!v)return;
+        ctx.font='bold 11px sans-serif';ctx.fillStyle='#374151';
+        ctx.fillText(v,bar.x,bar.y-8);
+      });
+      // Serving total above stacked bar
+      for(var i=0;i<labels.length;i++){
+        var total=confData[i]+unciData[i]+declData[i];if(!total)continue;
+        var topY=Infinity;
+        [1,2,3].forEach(function(di){if(ds[di].data[i]>0){var m=chart.getDatasetMeta(di);if(m.data[i])topY=Math.min(topY,m.data[i].y);}});
+        if(topY===Infinity)continue;
+        var mx=chart.getDatasetMeta(1).data[i];if(!mx)continue;
+        ctx.font='bold 11px sans-serif';ctx.fillStyle='#374151';
+        ctx.fillText(total,mx.x,topY-8);
+      }
+      // Counts inside each serving segment
+      [1,2,3].forEach(function(di){
+        var meta=chart.getDatasetMeta(di);
+        meta.data.forEach(function(bar,i){
+          var v=ds[di].data[i];if(!v)return;
+          var h=Math.abs(bar.base-bar.y);if(h<14)return;
+          ctx.font='bold 10px sans-serif';ctx.fillStyle='rgba(255,255,255,0.92)';
+          ctx.fillText(v,bar.x,bar.y+h/2);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
   if(chartBreakdown){chartBreakdown.destroy();chartBreakdown=null;}
   var ctx=document.getElementById('chart-breakdown').getContext('2d');
   chartBreakdown=new Chart(ctx,{
     type:'bar',
     data:{labels:labels,datasets:[
-      {label:'Served',data:served,backgroundColor:'#5BB8F5',borderRadius:5,borderSkipped:false},
-      {label:'Guests',data:guests,backgroundColor:'#10b981',borderRadius:5,borderSkipped:false}
+      {label:'Check-ins',data:ciData,backgroundColor:'#8b5cf6',stack:'ci',borderRadius:4,borderSkipped:false},
+      {label:'Confirmed',data:confData,backgroundColor:'#10b981',stack:'srv',borderSkipped:'bottom'},
+      {label:'Unconfirmed',data:unciData,backgroundColor:'#f59e0b',stack:'srv',borderSkipped:'bottom'},
+      {label:'Declined',data:declData,backgroundColor:'#ef4444',stack:'srv',borderSkipped:'bottom',borderRadius:4,borderRadiusTop:4}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:14,font:{size:11}}},
-        tooltip:{backgroundColor:'#0d1b2a',padding:10,cornerRadius:8,titleFont:{size:12},bodyFont:{size:11}}},
+      plugins:{
+        legend:{position:'bottom',labels:{usePointStyle:true,padding:14,font:{size:11}}},
+        tooltip:{backgroundColor:'#0d1b2a',padding:10,cornerRadius:8,titleFont:{size:12},bodyFont:{size:11}}
+      },
       scales:{
-        x:{grid:{display:false},ticks:{font:{size:11}}},
-        y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}},beginAtZero:true}
-      }}
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}},beginAtZero:true}
+      },
+      layout:{padding:{top:20}}
+    },
+    plugins:[labelPlugin]
   });
 
   var subLabels={week:'by day of week',month:'by Sunday',quarter:'by month',year:'by month'};
-  document.getElementById('breakdown-sub').textContent='Served & Guests — '+subLabels[G];
+  document.getElementById('breakdown-sub').textContent='PC Scheduling — '+subLabels[G];
 }
 
 function renderTrendChart(){
