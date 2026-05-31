@@ -1117,7 +1117,7 @@ function renderTeamGrid(cur,b){
 }
 
 function renderGlanceFlags(cur){
-  function mkFlags(arr,types){
+  function mkFlags(arr,types,color){
     var items=[];
     arr.forEach(function(d){
       types.forEach(function(t){
@@ -1127,13 +1127,13 @@ function renderGlanceFlags(cur){
     if(!items.length)return'<div class="empty" style="padding:20px">No items this period.</div>';
     return items.map(function(it){
       return'<div class="flag-item">'
-        +'<div class="flag-type">'+it.label+'</div>'
+        +'<div class="flag-type" style="color:'+color+'">'+it.label+'</div>'
         +'<div class="flag-meta">'+it.report.team+' · '+(it.report.date||it.report.timestamp)+' · '+it.report.name+'</div>'
         +'<div class="flag-txt">'+it.text+'</div></div>';
     }).join('');
   }
-  document.getElementById('flags-incidents').innerHTML=mkFlags(cur,[['followUp','Follow-up'],['followUp2','Add\'l Follow-up'],['incidents','Incident'],['actionSteps','Action Steps']]);
-  document.getElementById('flags-tech').innerHTML=mkFlags(cur,[['techIssues','Tech Issue'],['buildingRepairs','Building Repair'],['maintenanceDone','Maintenance Done']]);
+  document.getElementById('flags-incidents').innerHTML=mkFlags(cur,[['followUp','Follow-up'],['followUp2','Add\'l Follow-up'],['incidents','Incident'],['actionSteps','Action Steps']],'var(--amber)');
+  document.getElementById('flags-tech').innerHTML=mkFlags(cur,[['techIssues','Tech Issue'],['buildingRepairs','Building Repair'],['maintenanceDone','Maintenance Done']],'var(--red)');
 }
 
 function showTeamDetail(teamName){
