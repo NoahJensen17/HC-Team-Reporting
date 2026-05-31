@@ -699,7 +699,7 @@ function rowsToObjects(values){
 }
 function fmtDate(val){if(!val)return'';try{var d=new Date(val);if(isNaN(d.getTime()))return val.toString();return(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();}catch(e){return val.toString();}}
 function toNum(v){var n=parseFloat(v);return isNaN(n)?0:n;}
-var TEAM_ALIASES={'HC Medical':'Medical'};
+var TEAM_ALIASES={'HC Medical':'Medical','First Impressions/ Cafe':'First Impressions','Production':'Service Production'};
 function normTeam(t){return TEAM_ALIASES[t]||t;}
 
 function mapReport(o,i){
