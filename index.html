@@ -310,9 +310,9 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
   </div>
 
   <div class="ccard-full">
-    <div class="ccard-title">Trends Over Time</div>
-    <div class="ccard-sub" id="trend-sub">Served, Guests &amp; Connect Cards — last 12 periods</div>
-    <div style="position:relative;height:160px"><canvas id="chart-trend"></canvas></div>
+    <div class="ccard-title">Serving Trends Over Time</div>
+    <div class="ccard-sub" id="trend-sub">Serving Breakdown — last 12 months</div>
+    <div style="position:relative;height:180px"><canvas id="chart-trend"></canvas></div>
   </div>
 
   <div class="sec-hdr"><span>Team Health</span><span id="team-period-lbl" style="font-size:11px;font-weight:400;color:var(--g400)"></span></div>
@@ -1027,21 +1027,27 @@ function renderBreakdownChart(cur,b){
 }
 
 function renderTrendChart(){
-  var nPeriods=G==='year'?5:G==='quarter'?8:12;
+  var nPeriods={week:16,month:12,quarter:8,year:4}[G]||12;
+  var ciLookup=ciPersonLookup||new Set();
   var periods=[];
   for(var i=nPeriods-1;i>=0;i--){
-    var filtered=filterByPeriod(reportData,G,OFF-i);
     var b=getPeriodBounds(G,OFF-i);
-    periods.push({label:b.sh,served:sum(filtered,'served'),guests:sum(filtered,'firstTimeGuests'),cards:sum(filtered,'connectCards')});
+    var sc=filterSchedByPeriod(schedData,G,OFF-i);
+    var scheduled=sc.length;
+    var confirmed=sc.filter(function(r){return r.status==='Confirmed';}).length;
+    var checkins=sc.filter(function(r){var dk=pcaDateKey(r.plan_date),k=r.person_id||(r.person_name||'').trim().toLowerCase();return dk&&k&&ciLookup.has(k+'|'+dk);}).length;
+    periods.push({label:b.sh,scheduled:scheduled,confirmed:confirmed,checkins:checkins});
   }
   var labels=periods.map(function(p){return p.label;});
   if(chartTrend){chartTrend.destroy();chartTrend=null;}
   var ctx=document.getElementById('chart-trend').getContext('2d');
-  var cfg={
+  var lineOpts=function(color,fill){return{borderColor:color,backgroundColor:fill||'transparent',fill:!!fill,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2};};
+  chartTrend=new Chart(ctx,{
     type:'line',
     data:{labels:labels,datasets:[
-      {label:'Served',data:periods.map(function(p){return p.served;}),borderColor:'#5BB8F5',backgroundColor:'rgba(91,184,245,0.12)',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2},
-      {label:'Guests',data:periods.map(function(p){return p.guests;}),borderColor:'#10b981',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2}
+      Object.assign({label:'Scheduled',data:periods.map(function(p){return p.scheduled;})},lineOpts('#5BB8F5','rgba(91,184,245,0.10)')),
+      Object.assign({label:'Confirmed',data:periods.map(function(p){return p.confirmed;})},lineOpts('#10b981')),
+      Object.assign({label:'Check-ins',data:periods.map(function(p){return p.checkins;})},lineOpts('#8b5cf6'))
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:14,font:{size:11}}},
@@ -1050,10 +1056,9 @@ function renderTrendChart(){
         x:{grid:{display:false},ticks:{font:{size:11}}},
         y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}},beginAtZero:true}
       }}
-  };
-  chartTrend=new Chart(ctx,cfg);
+  });
   var nLabel={week:'weeks',month:'months',quarter:'quarters',year:'years'};
-  document.getElementById('trend-sub').textContent='Served & Guests — last '+nPeriods+' '+nLabel[G];
+  document.getElementById('trend-sub').textContent='Serving Breakdown — last '+nPeriods+' '+nLabel[G];
 }
 
 function renderDonutChart(){
