@@ -699,9 +699,11 @@ function rowsToObjects(values){
 }
 function fmtDate(val){if(!val)return'';try{var d=new Date(val);if(isNaN(d.getTime()))return val.toString();return(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();}catch(e){return val.toString();}}
 function toNum(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+var TEAM_ALIASES={'HC Medical':'Medical'};
+function normTeam(t){return TEAM_ALIASES[t]||t;}
 
 function mapReport(o,i){
-  return{id:i+1,timestamp:fmtDate(o['Timestamp']),team:o['Team']||'',name:o['Your Name']||'',
+  return{id:i+1,timestamp:fmtDate(o['Timestamp']),team:normTeam(o['Team']||''),name:o['Your Name']||'',
     date:fmtDate(o["Today's Date"]),
     scheduled:toNum(o['# of Team Members Scheduled']),
     minLeaders:toNum(o['Minimum # of Servant Leaders Needed Per Service']),
@@ -807,7 +809,7 @@ function mapSched(o,i){
     plan_date:o['plan_date']||'',plan_dates:o['plan_dates']||'',
     plan_title:o['plan_title']||'',series_title:o['series_title']||'',
     plan_id:o['plan_id']||'',person_name:o['person_name']||'',status:o['status']||'',
-    team:o['team']||'',position:o['position']||'',responds_to:o['responds_to']||'',
+    team:normTeam(o['team']||''),position:o['position']||'',responds_to:o['responds_to']||'',
     decline_reason:o['decline_reason']||'',notes:o['notes']||'',
     status_updated_at:o['status_updated_at']||''};
 }
