@@ -1094,7 +1094,8 @@ function renderTeamGrid(cur,b){
     if(dk&&k&&ciLookup.has(k+'|'+dk))teamMap[team].checkins++;
     if(dk)teamMap[team].dates[dk]=true;
   });
-  var teams=Object.values(teamMap).sort(function(a,b){return a.name.localeCompare(b.name);});
+  var HIDDEN_TEAMS=['Foundations','Bible Study','HC Connect'];
+  var teams=Object.values(teamMap).filter(function(t){return HIDDEN_TEAMS.indexOf(t.name)===-1;}).sort(function(a,b){return a.name.localeCompare(b.name);});
   function renderCard(t){
     var confRate=t.scheduled>0?Math.round(t.confirmed/t.scheduled*100):0;
     var uniqueDates=Object.keys(t.dates).length;
