@@ -827,7 +827,8 @@ window.onload=function(){
       checkInPeopleData=rowsToObjects(d.values).map(mapCheckInPerson);
       ciPersonLookup=buildCheckinLookup(checkInPeopleData);
       applyPcAttFilters();
-    }).catch(function(){});
+      onPcoDataLoaded();
+    }).catch(function(){onPcoDataLoaded();});
 };
 function onErr(e){console.error('Error loading data',e);}
 function onDataLoaded(){
