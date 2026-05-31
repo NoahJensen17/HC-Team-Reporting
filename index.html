@@ -89,7 +89,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .d-leg-n{font-weight:600;color:var(--g800)}
 
 /* TEAM GRID */
-.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:11px;margin-bottom:16px}
+.team-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:16px}
 .tcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);border:1px solid transparent}
 .tcard-name{font-size:13px;font-weight:600;color:var(--g800);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tcard-stats{display:flex;gap:8px;margin-bottom:10px}
@@ -205,10 +205,11 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 .err{text-align:center;padding:30px;color:var(--red);background:var(--redf);border-radius:var(--r);font-size:13px;margin:12px 0}
 
 /* RESPONSIVE */
-@media(max-width:1100px){.hero-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1100px){.hero-grid{grid-template-columns:repeat(3,1fr)}.team-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:860px){
   .chart-row,.flags-grid{grid-template-columns:1fr}
   .hero-grid{grid-template-columns:repeat(2,1fr)}
+  .team-grid{grid-template-columns:repeat(2,1fr)}
   .pipeline{grid-template-columns:1fr}
   .stat-grid{grid-template-columns:1fr}
 }
@@ -316,7 +317,6 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 
   <div class="sec-hdr"><span>Team Health</span><span id="team-period-lbl" style="font-size:11px;font-weight:400;color:var(--g400)"></span></div>
   <div class="team-grid" id="team-grid"><div class="loading"><div class="lds"></div><br>Loading…</div></div>
-  <div class="team-grid" id="team-grid-2"></div>
 
   <div class="sec-hdr"><span>Flags &amp; Follow-ups</span></div>
   <div class="flags-grid">
@@ -1111,12 +1111,7 @@ function renderTeamGrid(cur,b){
       +'<div class="acct-track"><div class="acct-fill '+cls+'" style="width:'+pct+'%"></div></div>'
       +'</div>';
   }
-  var mid=Math.ceil(teams.length/2);
-  var rows=[teams.slice(0,mid),teams.slice(mid)];
-  ['team-grid','team-grid-2'].forEach(function(id,ri){
-    document.getElementById(id).innerHTML=rows[ri].map(renderCard).join('')||'';
-  });
-  if(!teams.length)document.getElementById('team-grid').innerHTML='<div class="empty">No PC scheduling data for this period.</div>';
+  document.getElementById('team-grid').innerHTML=teams.map(renderCard).join('')||'<div class="empty">No PC scheduling data for this period.</div>';
 }
 
 function renderGlanceFlags(cur){
