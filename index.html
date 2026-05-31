@@ -1099,17 +1099,18 @@ function renderTeamGrid(cur,b){
   var teams=Object.values(teamMap).filter(function(t){return HIDDEN_TEAMS.indexOf(t.name)===-1;}).sort(function(a,b){return a.name.localeCompare(b.name);});
   function renderCard(t){
     var confRate=t.scheduled>0?Math.round(t.confirmed/t.scheduled*100):0;
-    var uniqueDates=Object.keys(t.dates).length;
-    var pct=Math.min(100,expectedSundays>0?Math.round(uniqueDates/expectedSundays*100):0);
+    var reportDates=new Set(cur.filter(function(r){return normTeam(r.team)===t.name;}).map(function(r){return r.date||r.timestamp;}));
+    var reported=reportDates.size;
+    var pct=Math.min(100,expectedSundays>0?Math.round(reported/expectedSundays*100):0);
     var cls=pct>=75?'g':pct>=50?'a':'r';
     return'<div class="tcard" style="'+(t.scheduled?'':'opacity:.6')+'">'
       +'<div class="tcard-name">'+t.name+'</div>'
       +'<div class="tcard-stats">'
-      +'<div class="ts"><div class="ts-v">'+t.scheduled+'</div><div class="ts-l">Scheduled</div></div>'
+      +'<div class="ts"><div class="ts-v" style="color:var(--blue)">'+t.scheduled+'</div><div class="ts-l">Scheduled</div></div>'
       +'<div class="ts"><div class="ts-v" style="color:var(--green)">'+confRate+'%</div><div class="ts-l">Conf. Rate</div></div>'
       +'<div class="ts"><div class="ts-v" style="color:var(--purple)">'+t.checkins+'</div><div class="ts-l">Check-ins</div></div>'
       +'</div>'
-      +'<div class="acct-row"><span>Accountability</span><span>'+uniqueDates+'/'+expectedSundays+' Sundays</span></div>'
+      +'<div class="acct-row"><span>Report Accountability</span><span>'+reported+'/'+expectedSundays+' Sundays</span></div>'
       +'<div class="acct-track"><div class="acct-fill '+cls+'" style="width:'+pct+'%"></div></div>'
       +'</div>';
   }
