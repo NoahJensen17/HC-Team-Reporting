@@ -262,7 +262,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
     </div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchSection('glance')">Month at a Glance</button>
+    <button class="nav-tab active" id="glance-tab-title" onclick="switchSection('glance')">Month Summary</button>
     <button class="nav-tab" onclick="switchSection('reports')">Team Reporting</button>
     <button class="nav-tab" onclick="switchSection('onboarding')">Onboarding</button>
   </div>
@@ -854,6 +854,8 @@ function renderAll(){
 function setGran(g){
   G=g;OFF=0;
   document.querySelectorAll('.gran-btn').forEach(function(b,i){b.classList.toggle('active',['week','month','quarter','year'][i]===g);});
+  var labels={week:'Week Summary',month:'Month Summary',quarter:'Quarter Summary',year:'Year Summary'};
+  document.getElementById('glance-tab-title').textContent=labels[g]||'Summary';
   if(loaded===3)renderAll();
 }
 function navPeriod(dir){OFF+=dir;if(loaded===3)renderAll();}
