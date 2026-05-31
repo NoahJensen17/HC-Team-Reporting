@@ -1581,7 +1581,7 @@ function openOnboardDetail(d){
     +'</div>'
     +'<div class="d-sec">Contact</div>'
     +'<div class="stat-grid">'+stat('Email',d.email||'—')+stat('Phone',d.phone||'—')+'</div>'
-    +(d.notes?'<div class="txt-block" style="margin-top:10px">'+d.notes+'</div>':'');
+    +(d.notes?'<div class="d-sec">Note</div><div class="txt-block">'+d.notes+'</div>':'');
   openOv();
 }
 // ── SCHEDULING ────────────────────────────────────────────────────────────
