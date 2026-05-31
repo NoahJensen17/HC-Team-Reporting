@@ -90,8 +90,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 
 /* TEAM GRID */
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:11px;margin-bottom:16px}
-.tcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);cursor:pointer;transition:all .15s;border:1px solid transparent}
-.tcard:hover{box-shadow:var(--shm);transform:translateY(-1px);border-color:var(--blue)}
+.tcard{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);border:1px solid transparent}
 .tcard-name{font-size:13px;font-weight:600;color:var(--g800);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tcard-stats{display:flex;gap:8px;margin-bottom:10px}
 .ts{flex:1}.ts-v{font-size:18px;font-weight:700;color:var(--g800);line-height:1}
@@ -1101,7 +1100,7 @@ function renderTeamGrid(cur,b){
     var uniqueDates=Object.keys(t.dates).length;
     var pct=Math.min(100,expectedSundays>0?Math.round(uniqueDates/expectedSundays*100):0);
     var cls=pct>=75?'g':pct>=50?'a':'r';
-    return'<div class="tcard" style="'+(t.scheduled?'':'opacity:.6')+'" onclick="showTeamDetail(\''+t.name+'\')">'
+    return'<div class="tcard" style="'+(t.scheduled?'':'opacity:.6')+'">'
       +'<div class="tcard-name">'+t.name+'</div>'
       +'<div class="tcard-stats">'
       +'<div class="ts"><div class="ts-v">'+t.scheduled+'</div><div class="ts-l">Scheduled</div></div>'
