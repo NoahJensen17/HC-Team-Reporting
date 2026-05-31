@@ -474,7 +474,7 @@ var TAB_CHECKINS_PEOPLE='CheckIns_People';
 var G='month', OFF=0;
 var reportData=[], gradsData=[], onboardData=[], schedData=[], checkInPeopleData=[];
 var ciPersonLookup=null;
-var rSortState={key:'date',asc:false}, oSortState={key:'progress',asc:true};
+var rSortState={key:'date',asc:false}, oSortState={key:'default',asc:true};
 var pcaSortState={key:'team',asc:true};
 var pcaModal={g:null,q:null,month:null,date:null,acc:null};
 var loaded=0, pcoLoaded=0;
@@ -1511,7 +1511,14 @@ function applyOnboardFilters(){
   renderOTable(f);
 }
 function renderOTable(data){
+  var statusRank={complete:2,inprog:1,notstart:0};
   var sorted=[...data].sort(function(a,b){
+    if(oSortState.key==='default'){
+      var sr=statusRank[obStatus(b)]-statusRank[obStatus(a)];if(sr!==0)return sr;
+      if(a.progress!==b.progress)return b.progress-a.progress;
+      var nc=a.name.localeCompare(b.name);if(nc!==0)return nc;
+      return a.team.localeCompare(b.team);
+    }
     var k=oSortState.key,asc=oSortState.asc,av=a[k],bv=b[k];
     var primary=typeof av==='number'?(asc?av-bv:bv-av):(asc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av)));
     if(primary!==0)return primary;
