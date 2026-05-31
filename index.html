@@ -859,12 +859,17 @@ function setGran(g){
   if(loaded===3)renderAll();
 }
 function navPeriod(dir){OFF+=dir;if(loaded===3)renderAll();}
+function hasDataInPeriod(off){
+  var nb=getPeriodBounds(G,off);
+  if(filterByPeriod(reportData,G,off).length)return true;
+  if(filterSchedByPeriod(schedData,G,off).length)return true;
+  if(checkInPeopleData.some(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=nb.start&&d<=nb.end;}))return true;
+  return false;
+}
 function renderPeriodLabel(){
   var b=getPeriodBounds(G,OFF);
   document.getElementById('period-lbl').textContent=b.label;
-  var now=new Date();
-  var futureStart=getPeriodBounds(G,OFF+1).start;
-  document.getElementById('p-next').disabled=futureStart>now;
+  document.getElementById('p-next').disabled=!hasDataInPeriod(OFF+1);
 }
 
 // ── GLANCE ───────────────────────────────────────────────────────────────
