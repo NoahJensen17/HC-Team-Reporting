@@ -58,7 +58,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--g100);color:v
 .sec-hdr{font-size:12px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
 
 /* HERO CARDS */
-.hero-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:16px}
+.hero-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:16px}
 .hcard{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--sh);position:relative;overflow:hidden}
 .hcard::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .hcard.cb::after{background:var(--blue)}.hcard.cg::after{background:var(--green)}
@@ -288,12 +288,11 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
 <div class="sec active" id="sec-glance">
 <div class="page">
   <div class="hero-grid">
-    <div class="hcard cn"><div class="hc-lbl">Reports Submitted</div><div class="hc-val" id="g-rpts">—</div><div class="hc-delta neu" id="g-rpts-d"></div></div>
-    <div class="hcard cb"><div class="hc-lbl">Total Served</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div><div class="hc-sub" id="g-ci-total"></div></div>
+    <div class="hcard cb"><div class="hc-lbl">Total Served</div><div class="hc-val" id="g-srv">—</div><div class="hc-delta neu" id="g-srv-d"></div></div>
+    <div class="hcard cn"><div class="hc-lbl">Total PC Check-ins</div><div class="hc-val" id="g-ci">—</div><div class="hc-delta neu" id="g-ci-d"></div></div>
     <div class="hcard cg"><div class="hc-lbl">First-Time Guests</div><div class="hc-val" id="g-gst">—</div><div class="hc-delta neu" id="g-gst-d"></div></div>
     <div class="hcard ca"><div class="hc-lbl">Connect Cards</div><div class="hc-val" id="g-crd">—</div><div class="hc-delta neu" id="g-crd-d"></div></div>
     <div class="hcard cp"><div class="hc-lbl">Sign-Ups</div><div class="hc-val" id="g-su">—</div><div class="hc-delta neu" id="g-su-d"></div></div>
-    <div class="hcard cb"><div class="hc-lbl">Checklist Rate</div><div class="hc-val" id="g-chk">—</div><div class="hc-delta neu" id="g-chk-d"></div></div>
   </div>
 
   <div class="chart-row">
@@ -883,17 +882,18 @@ function renderGlance(){
     if(d===0){el.textContent='— same as prior period';el.className='hc-delta neu';}
     else{el.textContent=(d>0?'↑':'↓')+' '+(pct!==null?pct+'%':Math.abs(d))+' vs prior period';el.className='hc-delta '+(d>0?'pos':'neg');}
   }
-  var chkCur=cur.length?Math.round(cur.filter(function(d){return/yes/i.test(d.checklistDone);}).length/cur.length*100):0;
-  var chkPrv=prev.length?Math.round(prev.filter(function(d){return/yes/i.test(d.checklistDone);}).length/prev.length*100):0;
-  setMetric('g-rpts','g-rpts-d',cur.length,prev.length);
-  setMetric('g-srv','g-srv-d',sum(cur,'served'),sum(prev,'served'));
+  // PCO confirmed scheduling (Total Served)
+  var bPrev=getPeriodBounds(G,OFF-1);
+  var schedCur=filterSchedByPeriod(schedData,G,OFF).filter(function(r){return r.status==='Confirmed';});
+  var schedPrv=filterSchedByPeriod(schedData,G,OFF-1).filter(function(r){return r.status==='Confirmed';});
+  setMetric('g-srv','g-srv-d',schedCur.length,schedPrv.length);
+  // PCO check-ins (church attendance)
+  var ciCur=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=b.start&&d<=b.end;});
+  var ciPrv=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=bPrev.start&&d<=bPrev.end;});
+  setMetric('g-ci','g-ci-d',ciCur.length,ciPrv.length);
   setMetric('g-gst','g-gst-d',sum(cur,'firstTimeGuests'),sum(prev,'firstTimeGuests'));
   setMetric('g-crd','g-crd-d',sum(cur,'connectCards'),sum(prev,'connectCards'));
   setMetric('g-su','g-su-d',sum(cur,'signUps'),sum(prev,'signUps'));
-  setMetric('g-chk','g-chk-d',chkCur,chkPrv,function(v){return v+'%';});
-  var ciCur=checkInPeopleData.filter(function(ci){var ts=ci.period_starts_at||ci.checked_in_at;if(!ts)return false;var d=parseDate(ts);return d&&d>=b.start&&d<=b.end;});
-  var ciEl=document.getElementById('g-ci-total');
-  if(ciEl)ciEl.textContent=ciCur.length?'PCO Check-ins: '+ciCur.length:'';
 
   // Team period label
   document.getElementById('team-period-lbl').textContent=b.label;
