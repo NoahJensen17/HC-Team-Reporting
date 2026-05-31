@@ -429,7 +429,7 @@ tr.dr:hover{background:var(--g50);cursor:pointer}
         <div class="srch"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="o-search" placeholder="Name or team…" oninput="applyOnboardFilters()"></div>
         <select class="fsel" id="o-team" onchange="applyOnboardFilters()"><option value="">All teams</option></select>
         <select class="fsel" id="o-status" onchange="applyOnboardFilters()">
-          <option value="">All</option><option value="complete">Complete</option>
+          <option value="">All Statuses</option><option value="complete">Complete</option>
           <option value="inprog">In Progress</option><option value="notstart">Not Started</option>
         </select>
       </div>
@@ -474,7 +474,7 @@ var TAB_CHECKINS_PEOPLE='CheckIns_People';
 var G='month', OFF=0;
 var reportData=[], gradsData=[], onboardData=[], schedData=[], checkInPeopleData=[];
 var ciPersonLookup=null;
-var rSortState={key:'date',asc:false}, oSortState={key:'name',asc:true};
+var rSortState={key:'date',asc:false}, oSortState={key:'progress',asc:true};
 var pcaSortState={key:'team',asc:true};
 var pcaModal={g:null,q:null,month:null,date:null,acc:null};
 var loaded=0, pcoLoaded=0;
@@ -1511,7 +1511,14 @@ function applyOnboardFilters(){
   renderOTable(f);
 }
 function renderOTable(data){
-  var sorted=sortArr(data,oSortState.key,oSortState.asc);
+  var sorted=[...data].sort(function(a,b){
+    var k=oSortState.key,asc=oSortState.asc,av=a[k],bv=b[k];
+    var primary=typeof av==='number'?(asc?av-bv:bv-av):(asc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av)));
+    if(primary!==0)return primary;
+    if(k!=='name'){var nc=a.name.localeCompare(b.name);if(nc!==0)return nc;}
+    if(k!=='team')return a.team.localeCompare(b.team);
+    return 0;
+  });
   var tbody=document.getElementById('o-body');tbody.innerHTML='';
   document.getElementById('o-empty').style.display=sorted.length?'none':'block';
   sorted.forEach(function(d){
