@@ -1539,7 +1539,7 @@ function renderOTable(data){
       +'<td><div style="display:flex;align-items:center;gap:5px">'
       +'<div class="prog" style="width:80px"><div class="prog-f" style="width:'+d.progress+'%;background:'+pc+'"></div></div>'
       +'<span style="font-size:11px;color:var(--g400)">'+d.progress+'%</span></div></td>'
-      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+(d.firstService||'—')+'</td>'
+      +'<td class="hide-sm" style="font-size:12px;color:var(--g500)">'+(function(){var p=parseDate(d.firstService);return p?fmtDate(p):'—';})()+'</td>'
       +'<td><span class="badge '+bcls+'">'+blbl+'</span></td>';
     tr.onclick=function(){openOnboardDetail(d);};tbody.appendChild(tr);
   });
